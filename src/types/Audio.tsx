@@ -1,0 +1,54 @@
+import * as React from "react";
+import { Sequence, Audio as RemotionAudio, useVideoConfig, staticFile } from "remotion";
+import { AudioContext } from "../context/index";
+import { toPlaybackRate } from "../utils/index";
+import type { Audio } from "../schema/index";
+
+function resolveAudioSrc(src: string): string {
+  // Already absolute URL or data URI — pass through
+  if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")) {
+    return src;
+  }
+  // Relative path — resolve via staticFile (serves from public/)
+  return staticFile(src);
+}
+
+export function AudioLeaf({ stream }: { stream: Audio }) {
+  const { fps } = useVideoConfig();
+  const ctx = React.useContext(AudioContext);
+  if (!stream.src) return null;
+
+  const resolvedSrc = resolveAudioSrc(stream.src);
+
+  return (
+    <>
+      {stream.actions.map((a) => {
+        const start = a.start ?? 0;
+        const end = a.end ?? start + 1;
+        const startFrom = a.startFrom ?? 0;
+        const endAt = a.endAt ?? stream.durationInSeconds ?? end - start;
+        const volume = a.volume ?? stream.volume ?? 1;
+        const playbackRate = a.loop ? 1 : toPlaybackRate((endAt - startFrom) / (end - start));
+        return (
+          <Sequence
+            key={a.id}
+            name={stream.title ?? stream.name ?? stream.src}
+            durationInFrames={Math.max(1, Math.floor(fps * (end - start)))}
+            from={Math.floor(fps * start)}
+            layout="none"
+          >
+            <RemotionAudio
+              src={resolvedSrc}
+              startFrom={Math.floor(startFrom * fps)}
+              endAt={Math.floor(startFrom * fps) + Math.floor(((endAt - startFrom) * fps) / playbackRate)}
+              muted={volume === 0 || !!ctx?.foreground}
+              volume={volume}
+              loop={(a.loop ?? 1) > 1}
+              playbackRate={playbackRate}
+            />
+          </Sequence>
+        );
+      })}
+    </>
+  );
+}

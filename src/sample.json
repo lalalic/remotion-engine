@@ -1,0 +1,55 @@
+{
+  "id": "root",
+  "type": "root",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "isSeries": true,
+  "transition": "fade",
+  "transitionTime": 0.4,
+  "stylesheet": ".caption { position: absolute; bottom: 12%; left: 0; right: 0; text-align: center; color: #fff; font: 700 64px/1.2 system-ui; text-shadow: 0 2px 8px #000; } .image { background: #111; }",
+  "children": [
+    {
+      "id": "intro",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg-1",
+          "type": "image",
+          "src": "https://picsum.photos/seed/intento1/1080/1920",
+          "fit": "cover",
+          "actions": [{ "id": "a1", "start": 0, "end": 3 }]
+        },
+        {
+          "id": "title",
+          "type": "subtitle",
+          "src": "Intento — channel-driven storytelling",
+          "fontSize": 72,
+          "actions": [{ "id": "a2", "start": 0, "end": 3 }]
+        }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg-2",
+          "type": "image",
+          "src": "https://picsum.photos/seed/intento2/1080/1920",
+          "fit": "cover",
+          "actions": [{ "id": "a3", "start": 0, "end": 3 }]
+        },
+        {
+          "id": "caption-2",
+          "type": "subtitle",
+          "src": "From clips to story, automatically.",
+          "fontSize": 64,
+          "actions": [{ "id": "a4", "start": 0, "end": 3 }]
+        }
+      ]
+    }
+  ]
+}

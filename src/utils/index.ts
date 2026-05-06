@@ -1,0 +1,160 @@
+/**
+ * Pure helpers, no AI, no network, no React.
+ * Subset of qili-ai/www/src/views/studio/utils.js with prompt-layer code removed.
+ */
+
+export function uid(): string {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+export function hash(value: unknown): string {
+  const s = typeof value === "string" ? value : JSON.stringify(value);
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return h.toString(36);
+}
+
+export function isURL(s: unknown): boolean {
+  if (typeof s !== "string") return false;
+  return /^(https?:|file:|data:|blob:|\/)/.test(s);
+}
+
+const KEBAB = /[^a-zA-Z0-9_-]+/g;
+export function toClassName(s: string): string {
+  return (s || "").replace(KEBAB, "-").replace(/^-+|-+$/g, "");
+}
+
+export function toPlaybackRate(rate: number): number {
+  // remotion clamps to (0.0625, 16)
+  if (!isFinite(rate) || rate <= 0) return 1;
+  return Math.min(16, Math.max(0.0625, rate));
+}
+
+export function cssJS(css?: string | Record<string, unknown>): Record<string, unknown> {
+  if (!css) return {};
+  if (typeof css === "object") return css;
+  const out: Record<string, string> = {};
+  for (const decl of css.split(";")) {
+    const i = decl.indexOf(":");
+    if (i < 0) continue;
+    const k = decl.slice(0, i).trim();
+    const v = decl.slice(i + 1).trim();
+    if (!k) continue;
+    const camel = k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    out[camel] = v;
+  }
+  return out;
+}
+
+export function pick<T extends object, K extends keyof T>(o: T, keys: K[]): Pick<T, K> {
+  const r = {} as Pick<T, K>;
+  for (const k of keys) if (k in o) r[k] = o[k];
+  return r;
+}
+
+export function omit<T extends object, K extends keyof T>(o: T, keys: K[]): Omit<T, K> {
+  const r = { ...o } as T;
+  for (const k of keys) delete r[k];
+  return r as Omit<T, K>;
+}
+
+/**
+ * Walk a stream tree depth-first. Visitor returns false to stop descending.
+ */
+export type StreamNode = { id?: string; type?: string; children?: StreamNode[]; [k: string]: unknown };
+export function walkDown<T extends StreamNode>(
+  node: T,
+  visit: (n: T, parent: T | null, depth: number) => boolean | void,
+  parent: T | null = null,
+  depth = 0,
+): void {
+  const keep = visit(node, parent, depth);
+  if (keep === false) return;
+  if (Array.isArray(node.children)) {
+    for (const c of node.children) walkDown(c as T, visit, node, depth + 1);
+  }
+}
+
+/**
+ * Compute duration of a stream subtree, in seconds.
+ *
+ * Mirrors qili-ai utils.getDurationInSeconds without the prompt/template branches.
+ *
+ *  - rhythm streams use their pre-set durationInSeconds (set by host)
+ *  - leaf actions use action.end as default
+ *  - series sums children, subtracting transition overlaps
+ *  - sequence (parallel) takes max child duration
+ *  - background children do not contribute
+ *  - actions[].streamRef is unsupported in lite (no template instancing)
+ */
+export interface DurationStream extends StreamNode {
+  type?: string;
+  isSeries?: boolean;
+  isBackground?: boolean;
+  transition?: string;
+  transitionTime?: number;
+  durationInSeconds?: number;
+  actions?: Array<{ start?: number; end?: number; startFrom?: number; endAt?: number }>;
+  children?: DurationStream[];
+}
+
+export function getDurationInSeconds(stream: DurationStream, update = true): number {
+  if (!stream) return 0;
+
+  if (stream.type === "rhythm") {
+    return stream.durationInSeconds ?? 0;
+  }
+
+  // leaf with actions
+  if (!stream.children?.length) {
+    const last = stream.actions?.[stream.actions.length - 1];
+    const d = last?.end ?? 0;
+    if (update) stream.durationInSeconds = d;
+    return d;
+  }
+
+  let total = 0;
+  const visible = stream.children.filter((c) => !c.isBackground);
+  if (stream.isSeries) {
+    const overlap = stream.transition ? (stream.transitionTime ?? 0.5) : 0;
+    for (let i = 0; i < visible.length; i++) {
+      const c = visible[i]!;
+      const d = getDurationInSeconds(c, update);
+      total += d;
+      if (i > 0 && overlap > 0) total -= overlap;
+    }
+  } else {
+    for (const c of visible) {
+      const d = getDurationInSeconds(c, update);
+      if (d > total) total = d;
+    }
+  }
+
+  if (update) stream.durationInSeconds = total;
+  return total;
+}
+
+/** WebVTT parsing — supports plain "MM:SS.mmm" or "HH:MM:SS.mmm". */
+export const VTT_REG = /^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/;
+export function vttSecond(t: string): number {
+  const m = VTT_REG.exec(t.trim());
+  if (!m) return 0;
+  const [, h = "0", mm = "0", ss = "0", ms = "0"] = m;
+  return Number(h) * 3600 + Number(mm) * 60 + Number(ss) + Number(ms.padEnd(3, "0")) / 1000;
+}
+
+export interface Cue { startFrom: number; endAt: number; text: string }
+export function parseVTT(src: string): Cue[] {
+  const cues: Cue[] = [];
+  const blocks = src.replace(/\r\n/g, "\n").split(/\n\n+/);
+  for (const b of blocks) {
+    const lines = b.split("\n").filter(Boolean);
+    const tline = lines.find((l) => l.includes("-->"));
+    if (!tline) continue;
+    const [a, z] = tline.split("-->").map((s) => s.trim());
+    if (!a || !z) continue;
+    const text = lines.slice(lines.indexOf(tline) + 1).join("\n").trim();
+    cues.push({ startFrom: vttSecond(a), endAt: vttSecond(z), text });
+  }
+  return cues;
+}
