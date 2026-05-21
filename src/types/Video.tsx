@@ -1,13 +1,20 @@
 import * as React from "react";
-import { Sequence, OffthreadVideo, useVideoConfig } from "remotion";
+import { Sequence, OffthreadVideo, useVideoConfig, staticFile } from "remotion";
+
+function resolveVideoSrc(src: string): string {
+  if (/^(https?:|data:|blob:|file:|\/)/.test(src)) return src;
+  return staticFile(src);
+}
 import { ComposeContext, AudioContext } from "../context/index";
 import { toPlaybackRate, cssJS } from "../utils/index";
 import type { Video } from "../schema/index";
+import { FrameSyncStyle } from "./FrameSyncStyle";
 
 export function VideoLeaf({ stream }: { stream: Video }) {
   const { fps } = useVideoConfig();
   const audio = React.useContext(AudioContext);
   if (!stream.src) return null;
+  const resolvedSrc = resolveVideoSrc(stream.src);
 
   return (
     <>
@@ -18,6 +25,8 @@ export function VideoLeaf({ stream }: { stream: Video }) {
         const endAt = a.endAt ?? stream.durationInSeconds ?? end - start;
         const volume = a.volume ?? stream.volume ?? 1;
         const playbackRate = a.loop ? 1 : toPlaybackRate((endAt - startFrom) / (end - start));
+        const actionStyle = cssJS(a.style);
+        const hasAnimation = "animation" in actionStyle;
         return (
           <Sequence
             key={a.id}
@@ -25,16 +34,31 @@ export function VideoLeaf({ stream }: { stream: Video }) {
             from={Math.floor(fps * start)}
             layout="none"
           >
-            <OffthreadVideo
-              src={stream.src!}
-              className={stream.name}
-              startFrom={Math.floor(startFrom * fps)}
-              endAt={Math.floor(startFrom * fps) + Math.floor(((endAt - startFrom) * fps) / playbackRate)}
-              muted={volume === 0 || !!audio?.foreground}
-              volume={volume}
-              playbackRate={playbackRate}
-              style={{ width: "100%", height: "100%", ...cssJS(a.style) }}
-            />
+            {hasAnimation ? (
+              <FrameSyncStyle style={actionStyle}>
+                <OffthreadVideo
+                  src={resolvedSrc}
+                  className={stream.name}
+                  startFrom={Math.floor(startFrom * fps)}
+                  endAt={Math.floor(startFrom * fps) + Math.floor(((endAt - startFrom) * fps) / playbackRate)}
+                  muted={volume === 0 || !!audio?.foreground}
+                  volume={volume}
+                  playbackRate={playbackRate}
+                  style={{ width: "100%", height: "100%" }}
+                />
+              </FrameSyncStyle>
+            ) : (
+              <OffthreadVideo
+                src={resolvedSrc}
+                className={stream.name}
+                startFrom={Math.floor(startFrom * fps)}
+                endAt={Math.floor(startFrom * fps) + Math.floor(((endAt - startFrom) * fps) / playbackRate)}
+                muted={volume === 0 || !!audio?.foreground}
+                volume={volume}
+                playbackRate={playbackRate}
+                style={{ width: "100%", height: "100%", ...actionStyle }}
+              />
+            )}
           </Sequence>
         );
       })}
