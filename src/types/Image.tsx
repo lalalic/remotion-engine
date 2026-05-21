@@ -1,7 +1,8 @@
 import * as React from "react";
-import { Sequence, Img, useVideoConfig } from "remotion";
+import { Sequence, Img, useVideoConfig, useCurrentFrame } from "remotion";
 import { cssJS } from "../utils/index";
 import type { Image } from "../schema/index";
+import { FrameSyncStyle } from "./FrameSyncStyle";
 
 export function ImageLeaf({ stream }: { stream: Image }) {
   const { fps } = useVideoConfig();
@@ -19,20 +20,21 @@ export function ImageLeaf({ stream }: { stream: Image }) {
             from={Math.floor(fps * start)}
             layout="none"
           >
-            <Img
-              src={stream.src!}
-              className={stream.name}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: stream.fit,
-                ...cssJS(a.style),
-              }}
-              onDragStart={(e) => {
-                e.stopPropagation();
-                return false;
-              }}
-            />
+            <FrameSyncStyle style={cssJS(a.style)}>
+              <Img
+                src={stream.src!}
+                className={stream.name}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: stream.fit,
+                }}
+                onDragStart={(e) => {
+                  e.stopPropagation();
+                  return false;
+                }}
+              />
+            </FrameSyncStyle>
           </Sequence>
         );
       })}
