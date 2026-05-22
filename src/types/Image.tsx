@@ -1,12 +1,18 @@
 import * as React from "react";
-import { Sequence, Img, useVideoConfig, useCurrentFrame } from "remotion";
+import { Sequence, Img, useVideoConfig, staticFile } from "remotion";
 import { cssJS } from "../utils/index";
 import type { Image } from "../schema/index";
 import { FrameSyncStyle } from "./FrameSyncStyle";
 
+function resolveImageSrc(src: string): string {
+  if (/^(https?:|data:|blob:|file:|\/)/.test(src)) return src;
+  return staticFile(src);
+}
+
 export function ImageLeaf({ stream }: { stream: Image }) {
   const { fps } = useVideoConfig();
   if (!stream.src) return null;
+  const resolvedSrc = resolveImageSrc(stream.src);
 
   return (
     <>
@@ -22,7 +28,7 @@ export function ImageLeaf({ stream }: { stream: Image }) {
           >
             <FrameSyncStyle style={cssJS(a.style)}>
               <Img
-                src={stream.src!}
+                src={resolvedSrc}
                 className={stream.name}
                 style={{
                   width: "100%",

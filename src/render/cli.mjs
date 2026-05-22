@@ -6,7 +6,7 @@
  *   node render/cli.mjs render <stream.json> [--aspect 16x9|9x16|1x1|all] [--output out.mp4]
  *   node render/cli.mjs render --template <id> --data <data.json> [--aspect all]
  *   node render/cli.mjs templates  — list available templates
- *   node render/cli.mjs preview <stream.json>  — open Remotion Studio
+ *   node render/cli.mjs preview <stream.json> [--force-new]  — open Remotion Studio
  */
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
@@ -36,6 +36,7 @@ Commands:
 
   templates                             List available templates
   preview <file.json>                   Open Remotion Studio with the stream tree
+    --force-new                         Start a new Studio instance even if another is running
 `);
 }
 
@@ -74,7 +75,7 @@ function loadTemplate(id) {
 }
 
 function parseArgs(argv) {
-  const args = { command: "", file: "", aspect: "16x9", output: "", template: "", data: "" };
+  const args = { command: "", file: "", aspect: "16x9", output: "", template: "", data: "", forceNew: false };
   let i = 2;
   if (argv[i]) args.command = argv[i++];
   if (argv[i] && !argv[i].startsWith("--")) args.file = argv[i++];
@@ -84,6 +85,7 @@ function parseArgs(argv) {
     else if (flag === "--output" && argv[i]) args.output = argv[i++];
     else if (flag === "--template" && argv[i]) args.template = argv[i++];
     else if (flag === "--data" && argv[i]) args.data = argv[i++];
+    else if (flag === "--force-new") args.forceNew = true;
   }
   return args;
 }
@@ -131,7 +133,8 @@ async function main() {
 
   if (args.command === "preview") {
     const propsFlag = args.file ? `--props="${resolve(args.file)}"` : "";
-    const cmd = `npx remotion studio --config=remotion.config.ts ${propsFlag}`;
+    const forceNewFlag = args.forceNew ? "--force-new" : "";
+    const cmd = `npx remotion studio --config=remotion.config.ts ${propsFlag} ${forceNewFlag}`;
     execSync(cmd, { cwd: ROOT, stdio: "inherit" });
     process.exit(0);
   }
