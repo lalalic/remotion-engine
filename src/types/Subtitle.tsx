@@ -1,7 +1,14 @@
 import * as React from "react";
-import { Sequence, useCurrentFrame, useVideoConfig } from "remotion";
-import { cssJS } from "../utils/index";
+import { cancelRender, continueRender, delayRender, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { cssJS, parseVTT } from "../utils/index";
 import type { Subtitle, SubtitleCue } from "../schema/index";
+
+function resolveSubtitleSrc(src: string): string {
+  if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:") || src.startsWith("/")) {
+    return src;
+  }
+  return staticFile(src);
+}
 
 /**
  * Lite subtitle: renders one cue at a time via an absolute-positioned div.
@@ -13,14 +20,68 @@ export function SubtitleLeaf({ stream }: { stream: Subtitle }) {
   const currentInSecond = useCurrentFrame() / fps;
   const start = stream.actions[0]?.start ?? 0;
   const end = stream.actions[0]?.end ?? start + 1;
+  const [loadedCues, setLoadedCues] = React.useState<SubtitleCue[] | null>(null);
+
+  React.useEffect(() => {
+    if (stream.cues?.length || !stream.src) {
+      setLoadedCues(null);
+      return;
+    }
+
+    if (stream.src.includes("-->")) {
+      setLoadedCues(parseVTT(stream.src));
+      return;
+    }
+
+    if (!/\.vtt(?:$|[?#])/.test(stream.src)) {
+      setLoadedCues(null);
+      return;
+    }
+
+    const handle = delayRender(`Loading subtitles: ${stream.src}`);
+    let active = true;
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      continueRender(handle);
+    };
+    fetch(resolveSubtitleSrc(stream.src))
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to load subtitles (${response.status}): ${stream.src}`);
+        }
+        return response.text();
+      })
+      .then((text) => {
+        if (!active) return;
+        setLoadedCues(parseVTT(text));
+        finish();
+      })
+      .catch((error) => {
+        if (!active) return;
+        settled = true;
+        cancelRender(error);
+      });
+
+    return () => {
+      active = false;
+      finish();
+    };
+  }, [stream.cues, stream.src]);
+
+  const cues = stream.cues?.length ? stream.cues : loadedCues;
 
   const cue: (SubtitleCue & { className?: string }) | undefined = React.useMemo(() => {
-    if (stream.cues?.length) {
-      return stream.cues.find(
+    if (cues?.length) {
+      return cues.find(
         (c) => c.startFrom + start <= currentInSecond && c.endAt + start > currentInSecond,
       );
     }
     if (stream.src) {
+      if (stream.src.includes("-->") || /\.vtt(?:$|[?#])/.test(stream.src)) {
+        return undefined;
+      }
       return {
         text: stream.src,
         startFrom: 0,
@@ -29,7 +90,7 @@ export function SubtitleLeaf({ stream }: { stream: Subtitle }) {
       };
     }
     return undefined;
-  }, [currentInSecond, stream, start, end]);
+  }, [currentInSecond, cues, stream, start, end]);
 
   if (!cue) return null;
 

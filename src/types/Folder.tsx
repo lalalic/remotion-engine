@@ -97,7 +97,7 @@ export function FolderLeaf({ stream }: { stream: FolderStream }) {
       if (child.isBackground && stream.durationInSeconds) {
         const times = Math.max(1, Math.ceil((stream.durationInSeconds * fps) / durFrames));
         return (
-          <Loop key={child.id} durationInFrames={durFrames} times={times}>
+          <Loop key={child.id} durationInFrames={durFrames} times={times} showInTimeline={false}>
             {wrapped}
           </Loop>
         );

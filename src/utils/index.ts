@@ -114,18 +114,22 @@ export function getDurationInSeconds(stream: DurationStream, update = true): num
   }
 
   let total = 0;
+  for (const child of stream.children) {
+    getDurationInSeconds(child, update);
+  }
+
   const visible = stream.children.filter((c) => !c.isBackground);
   if (stream.isSeries) {
     const overlap = stream.transition ? (stream.transitionTime ?? 0.5) : 0;
     for (let i = 0; i < visible.length; i++) {
       const c = visible[i]!;
-      const d = getDurationInSeconds(c, update);
+      const d = c.durationInSeconds ?? 0;
       total += d;
       if (i > 0 && overlap > 0) total -= overlap;
     }
   } else {
     for (const c of visible) {
-      const d = getDurationInSeconds(c, update);
+      const d = c.durationInSeconds ?? 0;
       if (d > total) total = d;
     }
   }

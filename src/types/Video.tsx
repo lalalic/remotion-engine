@@ -33,6 +33,7 @@ export function VideoLeaf({ stream }: { stream: Video }) {
             durationInFrames={Math.max(1, Math.floor(fps * (end - start)))}
             from={Math.floor(fps * start)}
             layout="none"
+            showInTimeline={false}
           >
             {hasAnimation ? (
               <FrameSyncStyle style={actionStyle}>
@@ -44,6 +45,7 @@ export function VideoLeaf({ stream }: { stream: Video }) {
                   muted={volume === 0 || !!audio?.foreground}
                   volume={volume}
                   playbackRate={playbackRate}
+                  showInTimeline={false}
                   style={{ width: "100%", height: "100%" }}
                 />
               </FrameSyncStyle>
@@ -56,6 +58,7 @@ export function VideoLeaf({ stream }: { stream: Video }) {
                 muted={volume === 0 || !!audio?.foreground}
                 volume={volume}
                 playbackRate={playbackRate}
+                showInTimeline={false}
                 style={{ width: "100%", height: "100%", ...actionStyle }}
               />
             )}

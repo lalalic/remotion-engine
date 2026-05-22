@@ -122,7 +122,7 @@ export type Subtitle = z.infer<typeof subtitle>;
 export const component = base.extend({
   type: z.literal("component").default("component"),
   componentName: z.string().describe("key in <ComposeProvider components={...}>"),
-  props: z.record(z.unknown()).default(() => ({})),
+  props: z.record(z.string(), z.unknown()).default(() => ({})),
   actions: z.array(action).min(1).default(() => [action.parse({})]),
 });
 export type Component = z.infer<typeof component>;

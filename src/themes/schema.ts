@@ -1,9 +1,15 @@
 import { z } from "zod";
 
+const DEFAULT_SPRING_CONFIG = {
+  damping: 12,
+  stiffness: 180,
+  mass: 0.8,
+};
+
 export const springConfig = z.object({
-  damping: z.number().default(12),
-  stiffness: z.number().default(180),
-  mass: z.number().default(0.8),
+  damping: z.number().default(DEFAULT_SPRING_CONFIG.damping),
+  stiffness: z.number().default(DEFAULT_SPRING_CONFIG.stiffness),
+  mass: z.number().default(DEFAULT_SPRING_CONFIG.mass),
 });
 
 export const themeSchema = z.object({
@@ -23,7 +29,7 @@ export const themeSchema = z.object({
     mono: z.string().default("'SF Mono', 'JetBrains Mono', monospace"),
   }),
   timing: z.object({
-    spring: springConfig.default({}),
+    spring: springConfig.default(DEFAULT_SPRING_CONFIG),
     stagger: z.number().default(4),
     transitionDuration: z.number().default(0.5),
   }),
