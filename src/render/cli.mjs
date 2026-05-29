@@ -67,6 +67,8 @@ function loadTemplate(id) {
   const paths = [
     join(ROOT, "src", "templates", "marketing", `${id}.json`),
     join(ROOT, "src", "templates", "demo", `${id}.json`),
+    join(ROOT, "src", "templates", "social", `${id}.json`),
+    join(ROOT, "src", "templates", "personal", `${id}.json`),
   ];
   for (const p of paths) {
     if (existsSync(p)) return JSON.parse(readFileSync(p, "utf-8"));
@@ -118,7 +120,7 @@ async function main() {
   if (args.command === "templates") {
     const dir = join(ROOT, "src", "templates");
     console.log("\nAvailable templates:\n");
-    for (const category of ["marketing", "demo"]) {
+    for (const category of ["marketing", "demo", "social", "personal"]) {
       const catDir = join(dir, category);
       if (!existsSync(catDir)) continue;
       for (const f of readdirSync(catDir)) {
