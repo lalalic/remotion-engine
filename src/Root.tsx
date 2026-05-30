@@ -9,6 +9,19 @@ import { Main } from "./scenes/Main";
 import { Cover } from "./scenes/Cover";
 import { ASPECT_DIMS, type VideoJson } from "./scenes/types";
 
+// React components are NOT JSON-serializable, so the components registry
+// cannot live inside `defaultProps`. Wrap RemotionEngine with a tiny
+// component that injects `builtinComponents` at render time.
+const RootComposition = (props: any) => (
+  <RemotionEngine
+    {...props}
+    compose={{
+      ...(props.compose ?? {}),
+      components: { ...builtinComponents, ...(props.compose?.components ?? {}) },
+    }}
+  />
+);
+
 // Default props for scene-based compositions (studio preview)
 const SCENE_DEFAULT_PROPS: VideoJson = {
   meta: { title: "Untitled", fps: 30, aspects: ["16x9", "9x16", "1x1"], duration: 5 },
@@ -42,14 +55,13 @@ export const RemotionRoot: React.FC = () => {
       {/* Stream-tree composition */}
       <Composition
         id="Root"
-        component={RemotionEngine as any}
+        component={RootComposition as any}
         durationInFrames={durationInFrames}
         fps={fps}
         width={width}
         height={height}
         defaultProps={{
           root: data,
-          compose: { components: builtinComponents },
           theme,
         } as any}
       />
