@@ -5,11 +5,7 @@ import { toPlaybackRate } from "../utils/index";
 import type { Audio } from "../schema/index";
 
 function resolveAudioSrc(src: string): string {
-  // Already absolute URL or data URI — pass through
-  if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")) {
-    return src;
-  }
-  // Relative path — resolve via staticFile (serves from public/)
+  if (/^(https?:|data:|blob:|file:|\/)/.test(src)) return src;
   return staticFile(src);
 }
 
