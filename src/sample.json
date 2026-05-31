@@ -7,7 +7,7 @@
   "isSeries": true,
   "transition": "fade",
   "transitionTime": 0.4,
-  "stylesheet": ".caption { position: absolute; bottom: 12%; left: 0; right: 0; text-align: center; color: #fff; font: 700 64px/1.2 system-ui; text-shadow: 0 2px 8px #000; } .image { background: #111; }",
+  "stylesheet": ".image { background: #111; }",
   "children": [
     {
       "id": "intro",

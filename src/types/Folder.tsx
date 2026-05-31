@@ -77,16 +77,18 @@ export function FolderLeaf({ stream }: { stream: FolderStream }) {
       const childContent = isLeaf
         ? React.createElement(Leaves[child.type] ?? (() => null), { stream: child })
         : React.createElement(FolderLeaf, { stream: child as FolderStream });
-      const wrapped = (
-        <Container
-          id={child.id}
-          type={child.type}
-          style={cssJS(child.style) as React.CSSProperties}
-          className={`${child.type} ${toClassName(child.name ?? "")}`}
-        >
-          {childContent}
-        </Container>
-      );
+      const wrapped = child.type === "subtitle"
+        ? childContent
+        : (
+          <Container
+            id={child.id}
+            type={child.type}
+            style={cssJS(child.style) as React.CSSProperties}
+            className={`${child.type} ${toClassName(child.name ?? "")}`}
+          >
+            {childContent}
+          </Container>
+        );
 
       const seq = (
         <SequenceWrap key={child.id} durationInFrames={durFrames} layout="none">

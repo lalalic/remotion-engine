@@ -130,14 +130,18 @@ export function SubtitleLeaf({ stream }: { stream: Subtitle }) {
       durationInFrames={Math.max(1, Math.floor((cue.endAt - cue.startFrom) * fps))}
       from={Math.floor(start * fps) + Math.floor(cue.startFrom * fps)}
     >
-      <div className={`caption ${cue.className ?? ""} ${stream.name ?? ""}`}>
+      <div className={`caption-overlay ${stream.name ?? ""}`} style={DEFAULT_BOX_STYLE}>
         {wordEls ? (
-          <span style={{ fontSize: stream.fontSize, fontStyle: stream.fontStyle, ...css }}>
+          <span
+            className={`caption ${cue.className ?? ""}`}
+            style={{ ...DEFAULT_TEXT_STYLE, fontSize: stream.fontSize ?? DEFAULT_TEXT_STYLE.fontSize, fontStyle: stream.fontStyle, ...css }}
+          >
             {wordEls}
           </span>
         ) : (
           <span
-            style={{ fontSize: stream.fontSize, fontStyle: stream.fontStyle, ...css }}
+            className={`caption ${cue.className ?? ""}`}
+            style={{ ...DEFAULT_TEXT_STYLE, fontSize: stream.fontSize ?? DEFAULT_TEXT_STYLE.fontSize, fontStyle: stream.fontStyle, ...css }}
             dangerouslySetInnerHTML={{ __html: cue.text }}
           />
         )}
@@ -145,3 +149,24 @@ export function SubtitleLeaf({ stream }: { stream: Subtitle }) {
     </Sequence>
   );
 }
+
+const DEFAULT_BOX_STYLE: React.CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  display: "flex",
+  alignItems: "flex-end",
+  justifyContent: "center",
+  padding: "0 5% 8% 5%",
+  pointerEvents: "none",
+  zIndex: 100,
+};
+
+const DEFAULT_TEXT_STYLE: React.CSSProperties = {
+  color: "white",
+  fontSize: 56,
+  fontWeight: 700,
+  textAlign: "center",
+  textShadow: "0 2px 12px rgba(0,0,0,0.85)",
+  lineHeight: 1.2,
+  fontFamily: '"PingFang SC","Noto Sans CJK SC","Hiragino Sans","Helvetica Neue",sans-serif',
+};
