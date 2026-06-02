@@ -1,0 +1,162 @@
+{
+  "id": "root",
+  "type": "root",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "isSeries": true,
+  "transition": "fade",
+  "transitionTime": 0.4,
+  "stylesheet": ".effect { overflow: hidden; }",
+  "children": [
+    {
+      "id": "effect-demo",
+      "type": "effect",
+      "name": "fadeIn-demo",
+      "animation": "fadeIn",
+      "animationTimingFunction": "ease-in-out",
+      "animationIterationCount": 1,
+      "children": [
+        {
+          "id": "bg-effect",
+          "type": "image",
+          "src": "https://picsum.photos/seed/effect1/1080/1920",
+          "fit": "cover",
+          "actions": [{ "id": "ae1", "start": 0, "end": 3 }]
+        },
+        {
+          "id": "title-effect",
+          "type": "subtitle",
+          "src": "Effect: fadeIn",
+          "fontSize": 72,
+          "actions": [{ "id": "ae2", "start": 0, "end": 3 }]
+        }
+      ],
+      "actions": [{ "id": "aeff", "start": 0, "end": 3 }]
+    },
+    {
+      "id": "bounce-demo",
+      "type": "effect",
+      "name": "bounce-demo",
+      "animation": "bounceIn",
+      "children": [
+        {
+          "id": "bg-bounce",
+          "type": "image",
+          "src": "https://picsum.photos/seed/bounce1/1080/1920",
+          "fit": "cover",
+          "actions": [{ "id": "ab1", "start": 0, "end": 3 }]
+        },
+        {
+          "id": "title-bounce",
+          "type": "subtitle",
+          "src": "Effect: bounceIn",
+          "fontSize": 72,
+          "actions": [{ "id": "ab2", "start": 0, "end": 3 }]
+        }
+      ],
+      "actions": [{ "id": "abeff", "start": 0, "end": 3 }]
+    },
+    {
+      "id": "pulse-demo",
+      "type": "effect",
+      "name": "pulse-demo",
+      "animation": "pulse",
+      "animationIterationCount": 3,
+      "children": [
+        {
+          "id": "bg-pulse",
+          "type": "image",
+          "src": "https://picsum.photos/seed/pulse1/1080/1920",
+          "fit": "cover",
+          "actions": [{ "id": "ap1", "start": 0, "end": 3 }]
+        },
+        {
+          "id": "title-pulse",
+          "type": "subtitle",
+          "src": "Effect: pulse x3",
+          "fontSize": 72,
+          "actions": [{ "id": "ap2", "start": 0, "end": 3 }]
+        }
+      ],
+      "actions": [{ "id": "apeff", "start": 0, "end": 3 }]
+    },
+    {
+      "id": "map-demo",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "map-route",
+          "type": "map",
+          "name": "sf-to-la",
+          "waypoints": [
+            { "lat": 37.7749, "lng": -122.4194, "label": "San Francisco" },
+            { "lat": 36.7783, "lng": -119.4179, "label": "Fresno" },
+            { "lat": 34.0522, "lng": -118.2437, "label": "Los Angeles" }
+          ],
+          "routeColor": "#4285F4",
+          "routeWeight": 5,
+          "actions": [{ "id": "am1", "start": 0, "end": 4 }]
+        },
+        {
+          "id": "map-title",
+          "type": "subtitle",
+          "src": "Map: SF → LA route",
+          "fontSize": 48,
+          "actions": [{ "id": "am2", "start": 0, "end": 4 }]
+        }
+      ]
+    },
+    {
+      "id": "custom-keyframes",
+      "type": "effect",
+      "name": "custom-effect",
+      "animation": "custom",
+      "customKeyframes": {
+        "0": { "opacity": "0", "transform": "scale(0.5) rotate(-10deg)" },
+        "50": { "opacity": "1", "transform": "scale(1.1) rotate(5deg)" },
+        "100": { "opacity": "1", "transform": "scale(1) rotate(0deg)" }
+      },
+      "children": [
+        {
+          "id": "bg-custom",
+          "type": "image",
+          "src": "https://picsum.photos/seed/custom1/1080/1920",
+          "fit": "cover",
+          "actions": [{ "id": "ac1", "start": 0, "end": 3 }]
+        },
+        {
+          "id": "title-custom",
+          "type": "subtitle",
+          "src": "Custom keyframes",
+          "fontSize": 72,
+          "actions": [{ "id": "ac2", "start": 0, "end": 3 }]
+        }
+      ],
+      "actions": [{ "id": "aceff", "start": 0, "end": 3 }]
+    },
+    {
+      "id": "dynamic-demo",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "remote-comp",
+          "type": "component",
+          "componentName": "RemoteCounter",
+          "src": "/public/test-remote-component.js",
+          "props": {},
+          "actions": [{ "id": "ad1", "start": 0, "end": 4 }]
+        },
+        {
+          "id": "dynamic-title",
+          "type": "subtitle",
+          "src": "Dynamic: loaded from URL",
+          "fontSize": 48,
+          "actions": [{ "id": "ad2", "start": 0, "end": 4 }]
+        }
+      ]
+    }
+  ]
+}
