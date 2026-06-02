@@ -58,3 +58,5 @@ export { rootSchema, FolderLeaf };
 export * from "./schema/index";
 export * from "./context/index";
 export { getDurationInSeconds } from "./utils/index";
+export { preloadComponents } from "./types/DynamicLoader";
+export { builtinAnimations } from "./types/keyframes";

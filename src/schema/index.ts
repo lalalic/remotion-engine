@@ -122,11 +122,69 @@ export type Subtitle = z.infer<typeof subtitle>;
 export const component = base.extend({
   type: z.literal("component").default("component"),
   componentName: z.string().describe("key in <ComposeProvider components={...}>"),
+  src: z.string().optional().describe("URL of remote component bundle (ESM or CJS)"),
   props: z.record(z.string(), z.unknown()).default(() => ({})),
   actions: z.array(action).min(1).default(() => [action.parse({})]),
 });
 export type Component = z.infer<typeof component>;
 
+// ---------------------------------------------------------------------------
+// Effect — CSS keyframe animation wrapper
+// ---------------------------------------------------------------------------
+export const effect = base.extend({
+  type: z.literal("effect").default("effect"),
+  animation: z.string().optional().describe("builtin keyframe name or 'custom'"),
+  animationTimingFunction: z
+    .enum(["linear", "ease", "ease-in", "ease-out", "ease-in-out"])
+    .optional(),
+  animationIterationCount: z.number().default(1),
+  customKeyframes: z
+    .record(z.string(), z.record(z.string(), z.string()))
+    .optional()
+    .describe('inline keyframes: { "0": { opacity: "0" }, "100": { opacity: "1" } }'),
+  children: z.array(z.lazy((): z.ZodTypeAny => stream)).default(() => []),
+  actions: z.array(action).min(1).default(() => [action.parse({})]),
+});
+export type Effect = z.infer<typeof effect>;
+
+// ---------------------------------------------------------------------------
+// Rhythm — audio loop with beat-synced children
+// ---------------------------------------------------------------------------
+export const rhythm = base.extend({
+  type: z.literal("rhythm").default("rhythm"),
+  src: z.string().optional().describe("audio file for beat playback"),
+  volume: z.number().min(0).max(1).default(1),
+  spots: z.array(z.number()).optional().describe("pre-computed beat timestamps in seconds"),
+  children: z.array(z.lazy((): z.ZodTypeAny => stream)).default(() => []),
+  actions: z.array(action).min(1).default(() => [action.parse({})]),
+});
+export type Rhythm = z.infer<typeof rhythm>;
+
+// ---------------------------------------------------------------------------
+// Map — animated route visualization
+// ---------------------------------------------------------------------------
+export const mapWaypoint = z.object({
+  lat: z.number(),
+  lng: z.number(),
+  label: z.string().optional(),
+  media: z.string().optional().describe("image/video src for waypoint marker"),
+});
+export type MapWaypoint = z.infer<typeof mapWaypoint>;
+
+export const mapStream = base.extend({
+  type: z.literal("map").default("map"),
+  waypoints: z.array(mapWaypoint).default(() => []),
+  routeColor: z.string().default("#4285F4"),
+  routeWeight: z.number().default(4),
+  markerSrc: z.string().optional().describe("custom marker image"),
+  zoom: z.number().default(12),
+  actions: z.array(action).min(1).default(() => [action.parse({})]),
+});
+export type MapStream = z.infer<typeof mapStream>;
+
+// ---------------------------------------------------------------------------
+// Discriminated union
+// ---------------------------------------------------------------------------
 export const stream = z.discriminatedUnion("type", [
   root,
   folder,
@@ -135,7 +193,13 @@ export const stream = z.discriminatedUnion("type", [
   image,
   subtitle,
   component,
+  effect,
+  rhythm,
+  mapStream,
 ]);
 export type Stream = z.infer<typeof stream>;
 
-export const types = { root, folder, video, audio, image, subtitle, component } as const;
+export const types = {
+  root, folder, video, audio, image, subtitle, component,
+  effect, rhythm, map: mapStream,
+} as const;

@@ -16,6 +16,9 @@ import { AudioLeaf } from "./Audio";
 import { ImageLeaf } from "./Image";
 import { SubtitleLeaf } from "./Subtitle";
 import { ComponentLeaf } from "./Component";
+import { RhythmLeaf } from "./Rhythm";
+import { MapLeaf } from "./Map";
+import { EffectWrapper } from "./Effect";
 
 const Leaves: Record<string, React.ComponentType<{ stream: any }>> = {
   video: VideoLeaf,
@@ -23,6 +26,8 @@ const Leaves: Record<string, React.ComponentType<{ stream: any }>> = {
   image: ImageLeaf,
   subtitle: SubtitleLeaf,
   component: ComponentLeaf,
+  rhythm: RhythmLeaf,
+  map: MapLeaf,
 };
 
 const TransitionPresets: Record<string, (opts?: any) => any> = {
@@ -73,10 +78,12 @@ export function FolderLeaf({ stream }: { stream: FolderStream }) {
       const dur = child.durationInSeconds ?? 0;
       const durFrames = Math.max(1, Math.floor(dur * fps));
       const SequenceWrap = TypedSeries.Sequence ?? Sequence;
-      const isLeaf = child.type !== "folder" && child.type !== "root";
+      const isLeaf = child.type !== "folder" && child.type !== "root" && child.type !== "effect";
       const childContent = isLeaf
         ? React.createElement(Leaves[child.type] ?? (() => null), { stream: child })
-        : React.createElement(FolderLeaf, { stream: child as FolderStream });
+        : child.type === "effect"
+          ? <EffectWrapper stream={child as any}><FolderLeaf stream={child as any} /></EffectWrapper>
+          : React.createElement(FolderLeaf, { stream: child as FolderStream });
       const wrapped = child.type === "subtitle"
         ? childContent
         : (
