@@ -41,9 +41,20 @@ try {
   if (scenesFolder?.children) {
     let offset = 0;
     scenes = scenesFolder.children.map(s => {
-      const action = s.children?.[0]?.actions?.[0];
+      const child = s.children?.[0] || {};
+      const action = child?.actions?.[0];
       const dur = action ? (action.end - action.start) : 5;
-      const scene = { name: s.name, start: offset, end: offset + dur };
+      // Extract the media source path from the child element
+      const src = child.src || "";
+      const mediaType = child.type || "unknown";
+      const scene = {
+        name: s.name,
+        start: offset,
+        end: offset + dur,
+        duration: dur,
+        src,          // e.g. "vlog/label-preview-.../photos/photo_1_9x16.jpg"
+        mediaType,    // "image" | "video"
+      };
       offset += dur;
       return scene;
     });
@@ -230,6 +241,8 @@ async function saveLabel(text, time) {
     time: Math.round(time * 1000) / 1000,
     sceneIndex: idx >= 0 ? idx : null,
     sceneName: scene ? scene.name : null,
+    src: scene ? scene.src : null,           // file path to the media asset
+    mediaType: scene ? scene.mediaType : null, // "image" | "video"
     label: text,
   };
   currentLabels.push(label);
@@ -259,7 +272,7 @@ document.getElementById("label-input")?.addEventListener("keydown", async (e) =>
     const input = e.target;
     const text = input.value.trim();
     if (!text) return;
-    const time = player ? player.currentTime : 0;
+    const time = player && typeof player.currentTime !== 'undefined' ? player.currentTime : 0;
     await saveLabel(text, time);
     input.value = "";
     input.focus();
