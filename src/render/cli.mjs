@@ -8,9 +8,9 @@
  *   node render/cli.mjs templates  — list available templates
  *   node render/cli.mjs preview <stream.json> [--force-new]  — open Remotion Studio
  */
-import { execSync } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
-import { resolve, dirname, basename, join } from "node:path";
+import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +23,12 @@ const ASPECTS = {
   "1x1": { width: 1080, height: 1080 },
 };
 
+/**
+ * How many "Rendered X/Y" lines to skip before printing one.
+ * E.g. 50 means print every 50th frame — for 1860 frames that's ~37 lines.
+ */
+const PROGRESS_INTERVAL = 50;
+
 function usage() {
   console.log(`
 remotion-engine CLI
@@ -33,10 +39,14 @@ Commands:
     --output <path>                     Output path (default: out/video-{aspect}.mp4)
     --template <id>                     Use a template instead of raw stream tree
     --data <data.json>                  Data for template slots
+    --verbose                           Show full per-frame progress (default: compact)
 
   templates                             List available templates
   preview <file.json>                   Open Remotion Studio with the stream tree
     --force-new                         Start a new Studio instance even if another is running
+    --collect                           Open player with label input overlay (collect user labels)
+    --chat                              Open player with chat panel (agent can interact in real-time)
+    --port <num>                        Port for the player server (default: 3001)
 `);
 }
 
@@ -77,7 +87,7 @@ function loadTemplate(id) {
 }
 
 function parseArgs(argv) {
-  const args = { command: "", file: "", aspect: "16x9", output: "", template: "", data: "", forceNew: false };
+  const args = { command: "", file: "", aspect: "16x9", output: "", template: "", data: "", forceNew: false, verbose: false, collect: false, chat: false, port: 3001 };
   let i = 2;
   if (argv[i]) args.command = argv[i++];
   if (argv[i] && !argv[i].startsWith("--")) args.file = argv[i++];
@@ -88,11 +98,25 @@ function parseArgs(argv) {
     else if (flag === "--template" && argv[i]) args.template = argv[i++];
     else if (flag === "--data" && argv[i]) args.data = argv[i++];
     else if (flag === "--force-new") args.forceNew = true;
+    else if (flag === "--verbose") args.verbose = true;
+    else if (flag === "--collect") args.collect = true;
+    else if (flag === "--chat") args.chat = true;
+    else if (flag === "--port" && argv[i]) args.port = parseInt(argv[i], 10);
+    else if (flag.startsWith("--port=")) args.port = parseInt(flag.split("=")[1], 10);
   }
   return args;
 }
 
-function renderOne(streamTree, aspect, outputPath) {
+/**
+ * Render one aspect ratio with compact progress output.
+ *
+ * In compact mode (default), "Rendered X/Y" lines are shown only every
+ * PROGRESS_INTERVAL frames and at the final frame, drastically reducing
+ * token consumption when output is captured by an LLM agent.
+ *
+ * Use --verbose to see every frame line (original behavior).
+ */
+function renderOne(streamTree, aspect, outputPath, verbose) {
   const dims = ASPECTS[aspect];
   if (!dims) throw new Error(`Unknown aspect: ${aspect}`);
 
@@ -103,10 +127,71 @@ function renderOne(streamTree, aspect, outputPath) {
 
   mkdirSync(dirname(outputPath), { recursive: true });
 
-  const cmd = `npx remotion render Root "${outputPath}" --props="${tmpProps}" --config=remotion.config.ts`;
   console.log(`\n▶ Rendering ${aspect} → ${outputPath}`);
-  execSync(cmd, { cwd: ROOT, stdio: "inherit" });
-  console.log(`✓ ${outputPath}`);
+
+  return new Promise((resolvePromise, reject) => {
+    const proc = spawn("npx", ["remotion", "render", "Root", outputPath, "--props", tmpProps, "--config", "remotion.config.ts"], { cwd: ROOT, stdio: ["ignore", "inherit", "pipe"] });
+
+    let lastLoggedFrame = 0;
+    let totalFrames = 0;
+    let lineBuffer = "";
+
+    // Parse "Rendered X/Y, time remaining: ..." or "Rendered X/Y" lines
+    const progressRe = /^Rendered\s+(\d+)\/(\d+)/;
+
+    proc.stderr.on("data", (chunk) => {
+      lineBuffer += chunk.toString();
+      const lines = lineBuffer.split("\n");
+      // Keep the last (potentially incomplete) segment in the buffer
+      lineBuffer = lines.pop() || "";
+      for (const line of lines) {
+        if (!line) continue;
+
+        const match = line.match(progressRe);
+        if (match) {
+          const currentFrame = parseInt(match[1], 10);
+          totalFrames = parseInt(match[2], 10);
+
+          if (verbose) {
+            // Original behavior: print every line
+            console.error(line);
+          } else {
+            // Compact mode: print only at intervals + completion
+            const isComplete = currentFrame >= totalFrames;
+            const intervalElapsed = currentFrame - lastLoggedFrame >= PROGRESS_INTERVAL;
+            const isStarting = currentFrame === 0 || (lastLoggedFrame === 0 && currentFrame > 0);
+
+            if (isComplete || intervalElapsed || isStarting) {
+              // Show a compact progress line
+              const pct = totalFrames > 0 ? ` (${Math.round((currentFrame / totalFrames) * 100)}%)` : "";
+              console.error(`  Rendered ${currentFrame}/${totalFrames}${pct}`);
+              lastLoggedFrame = currentFrame;
+            }
+          }
+        } else {
+          // Non-progress line — always print (bundle progress, errors, metadata)
+          console.error(line);
+        }
+      }
+    });
+
+    proc.on("error", (err) => {
+      reject(err);
+    });
+
+    proc.on("exit", (code) => {
+      // Flush any remaining line in the buffer (non-progress lines only)
+      if (lineBuffer && !lineBuffer.match(progressRe)) {
+        console.error(lineBuffer);
+      }
+      if (code === 0) {
+        console.log(`✓ ${outputPath}`);
+        resolvePromise();
+      } else {
+        reject(new Error(`Remotion exited with code ${code}`));
+      }
+    });
+  });
 }
 
 async function main() {
@@ -134,6 +219,28 @@ async function main() {
   }
 
   if (args.command === "preview") {
+    // Custom player modes
+    if (args.collect || args.chat) {
+      const playerServer = join(__dirname, "..", "player", "server.mjs");
+      if (!existsSync(playerServer)) {
+        console.error("Player server not found at", playerServer);
+        process.exit(1);
+      }
+      const modeFlags = args.collect ? "--collect" : "";
+      const chatFlag = args.chat ? "--chat" : "";
+      const portFlag = `--port=${args.port || 3001}`;
+      const fileFlag = args.file || join(ROOT, "video.json");
+      const serverArgs = [playerServer, resolve(fileFlag), modeFlags, chatFlag, portFlag].filter(Boolean);
+      console.log(`\n▶ Starting player${args.collect ? " (label mode)" : ""}${args.chat ? " (chat mode)" : ""} at http://localhost:${args.port || 3001}\n`);
+      const child = spawn("node", serverArgs, { cwd: ROOT, stdio: "inherit" });
+      child.on("exit", (code) => process.exit(code ?? 0));
+      // Keep running until killed
+      process.on("SIGINT", () => { child.kill(); process.exit(0); });
+      process.on("SIGTERM", () => { child.kill(); process.exit(0); });
+      return;
+    }
+
+    // Default: open Remotion Studio
     const propsFlag = args.file ? `--props="${resolve(args.file)}"` : "";
     const forceNewFlag = args.forceNew ? "--force-new" : "";
     const cmd = `npx remotion studio --config=remotion.config.ts ${propsFlag} ${forceNewFlag}`;
@@ -162,7 +269,7 @@ async function main() {
       const output = args.output && aspects.length === 1
         ? resolve(args.output)
         : join(ROOT, "out", `video-${aspect}.mp4`);
-      renderOne(streamTree, aspect, output);
+      await renderOne(streamTree, aspect, output, args.verbose);
     }
 
     console.log("\n✅ All renders complete.");
