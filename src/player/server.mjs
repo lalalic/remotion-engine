@@ -102,17 +102,16 @@ function getHtml() {
   #controls button:hover { background: #666; }
   #time-display { font-size: 14px; color: #aaa; font-family: monospace; }
   ${MODE_COLLECT ? `
-  #label-panel { position: absolute; right: 0; top: 0; bottom: 0; width: 320px; background: rgba(0,0,0,.85); padding: 16px; overflow-y: auto; transform: translateX(100%); transition: transform .2s; pointer-events: auto; }
-  #label-panel.open { transform: translateX(0); }
-  #label-panel h3 { margin-bottom: 12px; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-  .label-item { background: #222; border-radius: 6px; padding: 10px; margin-bottom: 8px; cursor: pointer; }
-  .label-item:hover { background: #333; }
-  .label-item .time { font-size: 11px; color: #888; font-family: monospace; }
-  .label-item .text { font-size: 14px; margin-top: 2px; }
-  .label-input-area { margin-top: 8px; }
-  .label-input-area input, .label-input-area select { width: 100%; padding: 8px; margin-bottom: 6px; border: 1px solid #444; background: #222; color: #eee; border-radius: 4px; }
-  .label-input-area button { width: 100%; padding: 8px; background: #4a9eff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-  ` : ""}
+  #label-bar { position: absolute; bottom: 80px; left: 24px; right: 24px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
+  #label-bar .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  #label-bar .chip { background: rgba(74,158,255,.8); color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+  #label-bar .chip .time { opacity: .7; margin-right: 4px; }
+  #label-input-row { display: flex; gap: 8px; align-items: center; }
+  #label-input { flex: 1; padding: 10px 14px; border: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.6); color: #fff; border-radius: 6px; font-size: 14px; outline: none; backdrop-filter: blur(4px); }
+  #label-input:focus { border-color: #4a9eff; }
+  #label-input::placeholder { color: rgba(255,255,255,.4); }
+  #label-counter { font-size: 11px; color: rgba(255,255,255,.5); padding-left: 4px; }
+  #label-time { font-size: 11px; color: rgba(255,255,255,.4); font-family: monospace; }` : ""}
   ${MODE_CHAT ? `
   #chat-panel { width: 360px; display: flex; flex-direction: column; border-left: 1px solid #333; background: #1a1a1a; }
   #chat-header { padding: 12px 16px; border-bottom: 1px solid #333; font-size: 13px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
@@ -133,33 +132,16 @@ function getHtml() {
   <div id="player-container">
     <video id="player" controls autoplay></video>
     ${MODE_COLLECT ? `
-    <div id="overlay">
-      <div id="controls">
-        <button id="btn-label">🏷️ Label this moment</button>
-        <span id="time-display">00:00 / 00:00</span>
+    <div id="label-bar">
+      <div class="chips" id="label-chips"></div>
+      <div id="label-input-row">
+        <input id="label-input" placeholder="Type a label and press Enter…" autocomplete="off" />
+        <span id="label-time"></span>
+        <span id="label-counter">0</span>
       </div>
     </div>
-    <div id="label-panel">
-      <h3>Labels</h3>
-      <div id="label-list"></div>
-      <div class="label-input-area" id="label-input-area" style="display:none">
-        <input id="label-text" placeholder="Label (e.g. Arrival at campsite)" />
-        <select id="label-mood">
-          <option value="">Mood…</option>
-          <option value="happy">😊 Happy</option>
-          <option value="calm">😌 Calm</option>
-          <option value="exciting">🤩 Exciting</option>
-          <option value="funny">😂 Funny</option>
-          <option value="dramatic">🎭 Dramatic</option>
-          <option value="quiet">🤫 Quiet</option>
-          <option value="warm">💛 Warm</option>
-        </select>
-        <label><input type="checkbox" id="label-highlight" /> Highlight</label>
-        <label><input type="checkbox" id="label-skip" /> Skip</label>
-        <button id="btn-save-label">Save</button>
-        <button id="btn-cancel-label" style="background:#555">Cancel</button>
-      </div>
-      <button id="btn-export-labels" style="width:100%;padding:8px;margin-top:8px;background:#333;color:#eee;border:1px solid #555;border-radius:4px;cursor:pointer">📥 Export Labels</button>
+    <div id="controls">
+      <span id="time-display">00:00 / 00:00</span>
     </div>
     ` : ""}
   </div>
@@ -213,8 +195,6 @@ if (player) {
     if (timeDisplay) {
       timeDisplay.textContent = formatTime(current) + " / " + formatTime(total);
     }
-    // Highlight current scene in collect mode
-    if (typeof updateCurrentScene === "function") updateCurrentScene(current);
   };
 }
 
@@ -225,112 +205,75 @@ function formatTime(t) {
 }
 
 ${MODE_COLLECT ? `
-// ─── Collect Mode ────────────────────────────────────────────────────────
+// ─── Collect Mode — simplified auto-save ─────────────────────────────────
 let currentLabels = [];
-let editingIndex = -1;
 
 function getCurrentScene(time) {
   return scenes.find(s => time >= s.start && time < s.end) || null;
 }
 
-function updateCurrentScene(time) {
-  const scene = getCurrentScene(time);
-  const btn = document.getElementById("btn-label");
-  if (btn) {
-    btn.textContent = scene ? "🏷️ Label: " + scene.name : "🏷️ Label this moment";
-  }
+function sceneIndex(time) {
+  return scenes.findIndex(s => time >= s.start && time < s.end);
 }
 
-// Open label input at current time
-document.getElementById("btn-label")?.addEventListener("click", () => {
-  const time = player.currentTime;
-  const scene = getCurrentScene(time);
-  const area = document.getElementById("label-input-area");
-  area.style.display = "block";
-  area.dataset.time = time;
-  area.dataset.sceneIndex = scenes.indexOf(scene);
-  document.getElementById("label-text").value = scene ? scene.name : "";
-  document.getElementById("label-text").focus();
-  editingIndex = -1;
-});
+function formatTime(t) {
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+}
 
-// Save label
-document.getElementById("btn-save-label")?.addEventListener("click", () => {
-  const text = document.getElementById("label-text").value.trim();
-  if (!text) return;
-  const time = parseFloat(document.getElementById("label-input-area").dataset.time || "0");
-  const sceneIndex = parseInt(document.getElementById("label-input-area").dataset.sceneIndex || "-1");
+// Auto-save label via API
+async function saveLabel(text, time) {
+  const idx = sceneIndex(time);
+  const scene = idx >= 0 ? scenes[idx] : null;
   const label = {
-    time: time,
-    sceneIndex: sceneIndex >= 0 ? sceneIndex : null,
-    sceneName: sceneIndex >= 0 && scenes[sceneIndex] ? scenes[sceneIndex].name : null,
+    time: Math.round(time * 1000) / 1000,
+    sceneIndex: idx >= 0 ? idx : null,
+    sceneName: scene ? scene.name : null,
     label: text,
-    mood: document.getElementById("label-mood").value || null,
-    isHighlight: document.getElementById("label-highlight").checked,
-    isSkip: document.getElementById("label-skip").checked,
   };
+  currentLabels.push(label);
+  renderChips();
 
-  if (editingIndex >= 0) {
-    currentLabels[editingIndex] = label;
-  } else {
-    currentLabels.push(label);
-  }
-  renderLabels();
-  document.getElementById("label-input-area").style.display = "none";
-  resetLabelForm();
-});
-
-document.getElementById("btn-cancel-label")?.addEventListener("click", () => {
-  document.getElementById("label-input-area").style.display = "none";
-  resetLabelForm();
-});
-
-function resetLabelForm() {
-  document.getElementById("label-text").value = "";
-  document.getElementById("label-mood").value = "";
-  document.getElementById("label-highlight").checked = false;
-  document.getElementById("label-skip").checked = false;
-}
-
-function renderLabels() {
-  const list = document.getElementById("label-list");
-  list.innerHTML = currentLabels.map((l, i) => \`
-    <div class="label-item" onclick="editLabel(\${i})">
-      <div class="time">\${formatTime(l.time)} \${l.sceneName ? "— " + l.sceneName : ""}</div>
-      <div class="text">\${l.isHighlight ? "⭐ " : ""}\${l.isSkip ? "🚫 " : ""}\${l.label} \${l.mood ? "(" + l.mood + ")" : ""}</div>
-    </div>
-  \`).join("");
-}
-
-function editLabel(i) {
-  const l = currentLabels[i];
-  editingIndex = i;
-  const area = document.getElementById("label-input-area");
-  area.style.display = "block";
-  area.dataset.time = l.time;
-  document.getElementById("label-text").value = l.label;
-  document.getElementById("label-mood").value = l.mood || "";
-  document.getElementById("label-highlight").checked = l.isHighlight;
-  document.getElementById("label-skip").checked = l.isSkip;
-  document.getElementById("label-text").focus();
-}
-
-// Export labels
-document.getElementById("btn-export-labels")?.addEventListener("click", async () => {
-  const json = JSON.stringify({ labels: currentLabels, scenes }, null, 2);
-  // Save via API
+  // Auto-save to file
   try {
-    const res = await fetch("/api/labels", {
+    await fetch("/api/labels", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: json,
+      body: JSON.stringify({ labels: currentLabels, scenes }),
     });
-    if (res.ok) alert("✅ Labels saved!");
-    else alert("❌ Failed to save labels");
-  } catch(e) {
-    alert("❌ Error: " + e.message);
+  } catch(e) { console.error("Auto-save failed:", e); }
+}
+
+function renderChips() {
+  const container = document.getElementById("label-chips");
+  container.innerHTML = currentLabels.map(l => \`
+    <span class="chip"><span class="time">\${formatTime(l.time)}</span>\${l.label}</span>
+  \`).join("");
+  document.getElementById("label-counter").textContent = currentLabels.length;
+}
+
+// Update time display
+document.getElementById("label-input")?.addEventListener("keydown", async (e) => {
+  if (e.key === "Enter") {
+    const input = e.target;
+    const text = input.value.trim();
+    if (!text) return;
+    const time = player ? player.currentTime : 0;
+    await saveLabel(text, time);
+    input.value = "";
+    input.focus();
   }
 });
+
+// Show current time in label bar
+if (player) {
+  player.ontimeupdate = () => {
+    const t = player.currentTime;
+    const el = document.getElementById("label-time");
+    if (el) el.textContent = formatTime(t);
+  };
+}
 ` : ""}
 
 ${MODE_CHAT ? `
