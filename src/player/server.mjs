@@ -97,12 +97,12 @@ function getHtml() {
   #player-container video { max-width: 100%; max-height: 100vh; }
   #overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; }
   #overlay.active { pointer-events: auto; }
-  #controls { display: flex; gap: 12px; align-items: center; padding: 12px; background: rgba(0,0,0,.7); border-radius: 8px; }
+  #controls { display: flex; gap: 12px; align-items: center; padding: 12px; background: rgba(0,0,0,.7); border-radius: 8px; pointer-events: auto; }
   #controls button { background: #444; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
   #controls button:hover { background: #666; }
   #time-display { font-size: 14px; color: #aaa; font-family: monospace; }
   ${MODE_COLLECT ? `
-  #label-panel { position: absolute; right: 0; top: 0; bottom: 0; width: 320px; background: rgba(0,0,0,.85); padding: 16px; overflow-y: auto; transform: translateX(100%); transition: transform .2s; }
+  #label-panel { position: absolute; right: 0; top: 0; bottom: 0; width: 320px; background: rgba(0,0,0,.85); padding: 16px; overflow-y: auto; transform: translateX(100%); transition: transform .2s; pointer-events: auto; }
   #label-panel.open { transform: translateX(0); }
   #label-panel h3 { margin-bottom: 12px; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
   .label-item { background: #222; border-radius: 6px; padding: 10px; margin-bottom: 8px; cursor: pointer; }
@@ -175,32 +175,19 @@ function getHtml() {
   ` : ""}
 
 <script>
-// ─── Load video.json as media source ────────────────────────────────────
-// For simplicity, we render the video.json to MP4 via the remotion render
-// endpoint, or the user can point to a pre-rendered MP4.
-// We'll use the label_preview.mp4 if available.
-
-const videoJson = ${(() => {
-  try {
-    return readFileSync(VIDEO_JSON, "utf-8").trim();
-  } catch {
-    return "null";
-  }
-})()};
-
-// Parse video.json to get scene info for timestamp mapping
+// ─── Load video.json from API ──────────────────────────────────────────
 let scenes = [];
 let totalDuration = 0;
-if (videoJson) {
+
+async function loadVideoData() {
   try {
-    const parsed = JSON.parse(videoJson);
-    const root = parsed.root || parsed;
+    const res = await fetch("/api/video-data");
+    const videoJson = await res.json();
+    const root = videoJson.root || videoJson;
     const scenesFolder = root.children?.find(c => c.name === "scenes" || c.id === "scenes");
     if (scenesFolder?.children) {
-      scenes = scenesFolder.children;
-      // Calculate scene start/end times (they're sequential in a series)
       let offset = 0;
-      scenes = scenes.map(s => {
+      scenes = scenesFolder.children.map(s => {
         const action = s.children?.[0]?.actions?.[0];
         const dur = action ? (action.end - action.start) : 5;
         const scene = { name: s.name, start: offset, end: offset + dur };
@@ -209,20 +196,17 @@ if (videoJson) {
       });
       totalDuration = offset;
     }
-  } catch(e) { console.error("JSON parse error:", e); }
+  } catch(e) { console.error("Failed to load video data:", e); }
 }
+
+loadVideoData();
 
 // ─── Player setup ────────────────────────────────────────────────────────
 const player = document.getElementById("player");
 if (player) {
-  // Try to load pre-rendered MP4
-  const mp4Path = "${resolve(dirname(VIDEO_JSON), "outputs", "label_preview.mp4")}";
-  const videoSrc = mp4Path;
-  // The server will serve static files
-  const relativePath = videoSrc.replace("${ROOT}", "");
-  player.src = relativePath || "/outputs/label_preview.mp4";
-
-  player.ontimeupdate = () => {
+  // Try label_preview.mp4 first, fall back to first video source in scenes
+  player.src = "/outputs/label_preview.mp4";
+  // If MP4 doesn't exist, the 404 will be handled silently
     const current = player.currentTime;
     const total = player.duration || totalDuration;
     const timeDisplay = document.getElementById("time-display");
@@ -455,6 +439,19 @@ const server = createServer((req, res) => {
           res.end(JSON.stringify({ error: e.message }));
         }
       });
+      return;
+    }
+
+    // API: Get video.json raw data (browser fetches this instead of embedded JSON)
+    if (path === "/api/video-data") {
+      try {
+        const data = readFileSync(VIDEO_JSON, "utf-8");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(data);
+      } catch (e) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: e.message }));
+      }
       return;
     }
 
