@@ -10,7 +10,7 @@
  *   node src/player/server.mjs <video.json> [--collect] [--chat] [--port 3001]
  */
 import { createServer } from "node:http";
-import { readFileSync, writeFileSync, watchFile, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, watchFile, existsSync, statSync, createReadStream } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -119,9 +119,7 @@ function getHtml() {
   #seek-bar::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #4a9eff; border: 2px solid #fff; cursor: pointer; }
   ${MODE_COLLECT ? `
   #label-bar { display: flex; flex-direction: column; gap: 4px; width: 100%; max-width: 420px; flex-shrink: 0; }
-  #label-bar .chips { display: flex; gap: 6px; flex-wrap: wrap; max-height: 32px; overflow-y: auto; }
-  #label-bar .chip { background: rgba(74,158,255,.8); color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
-  #label-bar .chip .time { opacity: .7; margin-right: 4px; }
+  #label-bar .chips { display: none; }
   #label-input-row { display: flex; gap: 8px; align-items: center; }
   #label-input { flex: 1; padding: 10px 14px; border: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.6); color: #fff; border-radius: 6px; font-size: 14px; outline: none; backdrop-filter: blur(4px); }
   #label-input:focus { border-color: #4a9eff; }
@@ -134,6 +132,7 @@ function getHtml() {
   #thumb-bar .thumb { flex: 0 0 auto; width: 60px; height: 60px; border-radius: 4px; overflow: hidden; cursor: pointer; border: 2px solid transparent; opacity: .6; transition: all .15s; }
   #thumb-bar .thumb:hover { opacity: 1; border-color: #4a9eff; }
   #thumb-bar .thumb.active { border-color: #fff; opacity: 1; }
+  #thumb-bar .thumb.labeled { border-color: #4a9eff; }
   #thumb-bar .thumb img, #thumb-bar .thumb video { width: 100%; height: 100%; object-fit: cover; }` : ""}
   ${MODE_CHAT ? `
   #chat-panel { width: 360px; display: flex; flex-direction: column; border-left: 1px solid #333; background: #1a1a1a; }
@@ -153,6 +152,7 @@ function getHtml() {
 </head>
 <body>
   <div id="player-container">
+
     <div id="phone-frame">
       <div id="scene-player">
         <video id="player" style="display:none"></video>
@@ -161,12 +161,11 @@ function getHtml() {
     </div>
     ${MODE_COLLECT ? `
     <div id="controls">
-      <button id="play-btn" title="Play/Pause">▶</button>
+      <button id="play-btn" title="Play/Pause">⏸</button>
       <input type="range" id="seek-bar" min="0" max="60" value="0" step="0.1" />
       <span class="ctrl-time"><span id="ctrl-current">00:00</span> / <span id="ctrl-total">00:00</span></span>
     </div>
     <div id="label-bar">
-      <div class="chips" id="label-chips"></div>
       <div id="label-input-row">
         <input id="label-input" placeholder="Type a label and press Enter…" autocomplete="off" />
         <span id="label-time"></span>
@@ -276,7 +275,12 @@ function playScene(idx, seekTime) {
       }
     }
     if (playing) {
-      player.play().catch(function(e) { console.error("Video play error:", e); });
+      player.play().catch(function(e) {
+        console.error("Video play error:", e);
+        // Autoplay blocked (no user gesture) — switch to paused state
+        playing = false;
+        if (playBtn) playBtn.textContent = "\u25B6";
+      });
     }
     // Advance on video end
     player.onended = function() { advanceScene(); };
@@ -308,12 +312,15 @@ function playScene(idx, seekTime) {
 }
 
 // Auto-save any text in the input box before switching away
+var _lastAutoLabel = null; // tracks last auto-populated label to avoid duplicates
 function autoSaveLabel() {
   if (currentSceneIdx < 0) return;
   var input = document.getElementById("label-input");
   if (!input) return;
   var text = input.value.trim();
   if (!text) return;
+  // Skip if text matches last auto-populated label (user didn't modify it)
+  if (text === _lastAutoLabel) { _lastAutoLabel = null; return; }
   var t = getCurrentTime();
   // Save it silently
   var idx = sceneIndex(t);
@@ -327,7 +334,7 @@ function autoSaveLabel() {
     label: text,
   };
   currentLabels.push(label);
-  renderChips();
+  updateLabeledThumbs();
   input.value = "";
   // Persist to server
   fetch("/api/labels", {
@@ -352,6 +359,7 @@ function showLabelForCurrentScene() {
     }
   }
   input.value = match || "";
+  _lastAutoLabel = match || null;
 }
 
 function advanceScene() {
@@ -381,7 +389,7 @@ function updateDisplay(t) {
 // Toggle play/pause
 function togglePlay() {
   playing = !playing;
-  if (playBtn) playBtn.textContent = playing ? "\u25B6" : "\u23F8";
+  if (playBtn) playBtn.textContent = playing ? "\u23F8" : "\u25B6";
   if (currentSceneIdx < 0) return;
   var s = scenesWithMedia[currentSceneIdx];
   var isVideo = s.mediaType === "video";
@@ -404,7 +412,7 @@ function togglePlay() {
 
 function stopPlayback() {
   playing = true;
-  if (playBtn) playBtn.textContent = "\u25B6";
+  if (playBtn) playBtn.textContent = "⏸";
   clearTimeout(sceneTimer);
   playScene(0);
 }
@@ -459,6 +467,8 @@ async function renderThumbnails() {
       html += '</div>';
     }
     bar.innerHTML = html;
+    // Label thumbs that have saved labels
+    if (typeof updateLabeledThumbs === 'function') updateLabeledThumbs();
   } catch(e) { console.error("Thumbnails error:", e); }
 }
 
@@ -482,6 +492,18 @@ function updateActiveThumb(time) {
 
 // Fetch scenes and render thumbnails on load
 renderThumbnails();
+
+// Load saved labels from server
+async function loadLabels() {
+  try {
+    const res = await fetch("/api/labels");
+    const data = await res.json();
+    if (data.labels) currentLabels = data.labels;
+    updateLabeledThumbs();
+    showLabelForCurrentScene();
+  } catch(e) { console.error("Load labels error:", e); }
+}
+loadLabels();
 
 function getCurrentScene(time) {
   return scenes.find(s => time >= s.start && time < s.end) || null;
@@ -510,7 +532,7 @@ async function saveLabel(text, time) {
     label: text,
   };
   currentLabels.push(label);
-  renderChips();
+  updateLabeledThumbs();
 
   // Auto-save to file
   try {
@@ -522,12 +544,20 @@ async function saveLabel(text, time) {
   } catch(e) { console.error("Auto-save failed:", e); }
 }
 
-function renderChips() {
-  const container = document.getElementById("label-chips");
-  container.innerHTML = currentLabels.map(l => \`
-    <span class="chip"><span class="time">\${formatTime(l.time)}</span>\${l.label}</span>
-  \`).join("");
+function updateLabeledThumbs() {
+  // Update counter
   document.getElementById("label-counter").textContent = currentLabels.length;
+  // Mark thumbnails that have labels
+  var labeled = {};
+  for (var i = 0; i < currentLabels.length; i++) {
+    if (currentLabels[i].sceneIndex !== null) {
+      labeled[currentLabels[i].sceneIndex] = true;
+    }
+  }
+  var thumbs = document.querySelectorAll("#thumb-bar .thumb");
+  thumbs.forEach(function(el, idx) {
+    el.classList.toggle("labeled", !!labeled[idx]);
+  });
 }
 
 // Update time display
@@ -537,8 +567,15 @@ document.getElementById("label-input")?.addEventListener("keydown", async (e) =>
     const text = input.value.trim();
     if (!text) return;
     const time = typeof getCurrentTime === 'function' ? getCurrentTime() : 0;
-    await saveLabel(text, time);
-    input.value = "";
+    // Skip if same as last label for this scene (avoid duplicates)
+    const idx = sceneIndex(time);
+    var lastLabel = null;
+    for (var i = currentLabels.length - 1; i >= 0; i--) {
+      if (currentLabels[i].sceneIndex === idx) { lastLabel = currentLabels[i].label; break; }
+    }
+    if (lastLabel !== text) {
+      await saveLabel(text, time);
+    }
     input.focus();
   }
 });
@@ -603,22 +640,36 @@ const server = createServer((req, res) => {
   const path = url.pathname;
 
   try {
-    // API: Save labels (collect mode)
-    if (path === "/api/labels" && req.method === "POST") {
-      let body = "";
-      req.on("data", c => body += c);
-      req.on("end", () => {
+    // API: Get or save labels (collect mode)
+    if (path === "/api/labels") {
+      const labelsPath = join(dirname(VIDEO_JSON), "labels.json");
+      if (req.method === "GET") {
         try {
-          const labelsPath = join(dirname(VIDEO_JSON), "labels.json");
-          writeFileSync(labelsPath, body, "utf-8");
+          const data = readFileSync(labelsPath, "utf-8");
           res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ saved: true, path: labelsPath }));
+          res.end(data);
         } catch (e) {
-          res.writeHead(500, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: e.message }));
+          // No labels file yet
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ labels: [], scenes: [] }));
         }
-      });
-      return;
+        return;
+      }
+      if (req.method === "POST") {
+        let body = "";
+        req.on("data", c => body += c);
+        req.on("end", () => {
+          try {
+            writeFileSync(labelsPath, body, "utf-8");
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ saved: true, path: labelsPath }));
+          } catch (e) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: e.message }));
+          }
+        });
+        return;
+      }
     }
 
     // API: Chat SSE stream
@@ -695,8 +746,32 @@ const server = createServer((req, res) => {
     const assetPath = resolveAsset(path);
     if (assetPath && existsSync(assetPath)) {
       const ext = path.slice(path.lastIndexOf("."));
-      res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
-      res.end(readFileSync(assetPath));
+      const mime = MIME[ext] || "application/octet-stream";
+      const stat = statSync(assetPath);
+      const fileSize = stat.size;
+      const range = req.headers.range;
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        const chunkSize = end - start + 1;
+        const stream = createReadStream(assetPath, { start, end });
+        res.writeHead(206, {
+          "Content-Range": "bytes " + start + "-" + end + "/" + fileSize,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunkSize,
+          "Content-Type": mime,
+        });
+        stream.pipe(res);
+      } else {
+        const data = readFileSync(assetPath);
+        res.writeHead(200, {
+          "Content-Type": mime,
+          "Accept-Ranges": "bytes",
+          "Content-Length": fileSize,
+        });
+        res.end(data);
+      }
       return;
     }
 
