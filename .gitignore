@@ -2,3 +2,4 @@ node_modules/
 .tmp/out/
 *.bak
 public/vlog/
+public/
