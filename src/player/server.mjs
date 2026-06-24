@@ -3,11 +3,11 @@
  * Custom player server for remotion-engine.
  *
  * Modes:
- *   --collect  – playback with label input overlay; labels map to media timestamps
+ *   --label   – playback with label input overlay; labels map to media timestamps
  *   --chat     – playback + chat panel; agent makes changes that take effect immediately
  *
  * Usage:
- *   node src/player/server.mjs <video.json> [--collect] [--chat] [--port 3001]
+ *   node src/player/server.mjs <video.json> [--label] [--chat] [--port 3001]
  */
 import { createServer } from "node:http";
 import { readFileSync, writeFileSync, watchFile, existsSync, statSync, createReadStream } from "node:fs";
@@ -21,13 +21,13 @@ const PORT = parseInt(process.argv.find(a => a.startsWith("--port="))?.split("="
 // Find video.json path
 const jsonArg = process.argv.find(a => a.endsWith(".json") && !a.startsWith("--"));
 const VIDEO_JSON = jsonArg ? resolve(jsonArg) : join(ROOT, "video.json");
-const MODE_COLLECT = process.argv.includes("--collect");
+const MODE_LABEL = process.argv.includes("--label");
 const MODE_CHAT = process.argv.includes("--chat");
 
 // ─── SSE clients for chat mode ──────────────────────────────────────────
 const sseClients = new Set();
 
-// ─── Label store for collect mode ────────────────────────────────────────
+// ─── Label store for label mode ───────────────────────────────────────────
 let labels = [];
 
 // ─── Parse video.json for scene info ─────────────────────────────────────
@@ -93,14 +93,14 @@ function resolveAsset(urlPath) {
 
 // ─── HTML page ───────────────────────────────────────────────────────────
 function getHtml() {
-  const hasCollect = MODE_COLLECT ? "true" : "false";
+  const hasLabel = MODE_LABEL ? "true" : "false";
   const hasChat = MODE_CHAT ? "true" : "false";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Remotion Player${MODE_COLLECT ? " — Label" : ""}${MODE_CHAT ? " — Chat" : ""}</title>
+<title>Remotion Player${MODE_LABEL ? " — Label" : ""}${MODE_CHAT ? " — Chat" : ""}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #111; color: #eee; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; height: 100vh; overflow: hidden; }
@@ -117,7 +117,7 @@ function getHtml() {
   #seek-bar { flex: 1; height: 4px; -webkit-appearance: none; appearance: none; background: #444; border-radius: 2px; outline: none; cursor: pointer; min-width: 0; }
   #seek-bar::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #4a9eff; border: 2px solid #fff; cursor: pointer; }
   #seek-bar::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #4a9eff; border: 2px solid #fff; cursor: pointer; }
-  ${MODE_COLLECT ? `
+  ${MODE_LABEL ? `
   #label-bar { display: flex; flex-direction: column; gap: 4px; width: 100%; max-width: 420px; flex-shrink: 0; }
   #label-bar .chips { display: none; }
   #label-input-row { display: flex; gap: 8px; align-items: center; }
@@ -159,7 +159,7 @@ function getHtml() {
         <img id="photo-player" style="display:none" />
       </div>
     </div>
-    ${MODE_COLLECT ? `
+    ${MODE_LABEL ? `
     <div id="controls">
       <button id="play-btn" title="Play/Pause">⏸</button>
       <input type="range" id="seek-bar" min="0" max="60" value="0" step="0.1" />
@@ -441,8 +441,8 @@ if (seekBar) {
 
 initScenePlayer();
 
-${MODE_COLLECT ? `
-// ─── Collect Mode — simplified auto-save ─────────────────────────────────
+${MODE_LABEL ? `
+// ─── Label Mode — simplified auto-save ────────────────────────────────────
 let currentLabels = [];
 
 // ─── Thumbnail bar — scene previews with click-to-seek ───────────────────
@@ -640,7 +640,7 @@ const server = createServer((req, res) => {
   const path = url.pathname;
 
   try {
-    // API: Get or save labels (collect mode)
+    // API: Get or save labels (label mode)
     if (path === "/api/labels") {
       const labelsPath = join(dirname(VIDEO_JSON), "labels.json");
       if (req.method === "GET") {
@@ -730,7 +730,7 @@ const server = createServer((req, res) => {
       res.end(JSON.stringify({
         scenes,
         totalDuration,
-        mode: { collect: MODE_COLLECT, chat: MODE_CHAT },
+        mode: { label: MODE_LABEL, chat: MODE_CHAT },
       }));
       return;
     }
@@ -788,10 +788,10 @@ const server = createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  const mode = MODE_COLLECT ? " --collect" : MODE_CHAT ? " --chat" : "";
+  const mode = MODE_LABEL ? " --label" : MODE_CHAT ? " --chat" : "";
   console.log(`\n🎬 Remotion Player${mode} at http://localhost:${PORT}`);
   console.log(`   JSON: ${VIDEO_JSON}`);
-  if (MODE_COLLECT) console.log(`   Labels will be saved to ${dirname(VIDEO_JSON)}/labels.json`);
+  if (MODE_LABEL) console.log(`   Labels will be saved to ${dirname(VIDEO_JSON)}/labels.json`);
   if (MODE_CHAT) console.log(`   Agent can POST to http://localhost:${PORT}/api/chat/send`);
   console.log("");
 });

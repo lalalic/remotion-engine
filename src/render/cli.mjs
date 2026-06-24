@@ -44,7 +44,7 @@ Commands:
   templates                             List available templates
   preview <file.json>                   Open Remotion Studio with the stream tree
     --force-new                         Start a new Studio instance even if another is running
-    --collect                           Open player with label input overlay (collect user labels)
+    --label                           Open player with label input overlay
     --chat                              Open player with chat panel (agent can interact in real-time)
     --port <num>                        Port for the player server (default: 3001)
 `);
@@ -87,7 +87,7 @@ function loadTemplate(id) {
 }
 
 function parseArgs(argv) {
-  const args = { command: "", file: "", aspect: "16x9", output: "", template: "", data: "", forceNew: false, verbose: false, collect: false, chat: false, port: 3001 };
+  const args = { command: "", file: "", aspect: "16x9", output: "", template: "", data: "", forceNew: false, verbose: false, label: false, chat: false, port: 3001 };
   let i = 2;
   if (argv[i]) args.command = argv[i++];
   if (argv[i] && !argv[i].startsWith("--")) args.file = argv[i++];
@@ -99,7 +99,7 @@ function parseArgs(argv) {
     else if (flag === "--data" && argv[i]) args.data = argv[i++];
     else if (flag === "--force-new") args.forceNew = true;
     else if (flag === "--verbose") args.verbose = true;
-    else if (flag === "--collect") args.collect = true;
+    else if (flag === "--label") args.label = true;
     else if (flag === "--chat") args.chat = true;
     else if (flag === "--port" && argv[i]) args.port = parseInt(argv[i], 10);
     else if (flag.startsWith("--port=")) args.port = parseInt(flag.split("=")[1], 10);
@@ -220,18 +220,18 @@ async function main() {
 
   if (args.command === "preview") {
     // Custom player modes
-    if (args.collect || args.chat) {
+    if (args.label || args.chat) {
       const playerServer = join(__dirname, "..", "player", "server.mjs");
       if (!existsSync(playerServer)) {
         console.error("Player server not found at", playerServer);
         process.exit(1);
       }
-      const modeFlags = args.collect ? "--collect" : "";
+      const modeFlags = args.label ? "--label" : "";
       const chatFlag = args.chat ? "--chat" : "";
       const portFlag = `--port=${args.port || 3001}`;
       const fileFlag = args.file || join(ROOT, "video.json");
       const serverArgs = [playerServer, resolve(fileFlag), modeFlags, chatFlag, portFlag].filter(Boolean);
-      console.log(`\n▶ Starting player${args.collect ? " (label mode)" : ""}${args.chat ? " (chat mode)" : ""} at http://localhost:${args.port || 3001}\n`);
+      console.log(`\n▶ Starting player${args.label ? " (label mode)" : ""}${args.chat ? " (chat mode)" : ""} at http://localhost:${args.port || 3001}\n`);
       const child = spawn("node", serverArgs, { cwd: ROOT, stdio: "inherit" });
       child.on("exit", (code) => process.exit(code ?? 0));
       // Keep running until killed
