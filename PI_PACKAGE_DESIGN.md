@@ -1,9 +1,10 @@
-# Pi Package Implementation: AI Video Editing Agent with MLX Models & Remotion Render Engine
+# Pi Package Implementation: AI Video Editing Agent with MLX CLI & Remotion Render Engine
 
 **Project**: FireRed-OpenStoryline Pi Package  
 **Status**: Design Document  
 **Last Updated**: 2026-06-25  
-**Render Engine**: `lalalic/remotion-engine` (Remotion 4.x stream-tree kernel)
+**Render Engine**: `lalalic/remotion-engine` (Remotion 4.x stream-tree kernel)  
+**AI Models**: MLX CLI tools (`mlx-vlm`, `mlx-audio`, `whisper` CLI)
 
 ---
 
@@ -15,7 +16,7 @@
 4. [Skill System](#skill-system)
 5. [Subagent Coordination](#subagent-coordination)
 6. [Prompt Template System](#prompt-template-system)
-7. [MLX Integration](#mlx-integration)
+7. **[MLX CLI Integration](#mlx-cli-integration)** ⭐ NEW
 8. [Remotion-Engine Integration](#remotion-engine-integration)
 9. [Implementation Roadmap](#implementation-roadmap)
 
@@ -26,9 +27,8 @@
 ### Objective
 Implement a **Pi package** that adapts FireRed-OpenStoryline's skill-based video editing workflow using:
 - **@nicobailon/pi-subagents** for parallel & sequential task orchestration
-- **MLX-VLM** & **MLX-Audio** for local vision-language & audio processing (replacing cloud VLM/TTS)
-- **Whisper** for local speech-to-text (replacing cloud STT)
-- **lalalic/remotion-engine** as the render-only timeline kernel (replacing MoviePy)
+- **MLX CLI tools** (`mlx-vlm`, `mlx-audio`, `whisper`) for local AI inference (no Python SDKs)
+- **Remotion CLI** for video rendering (replacing MoviePy)
 - **Task-driven prompt templates** (referencing FireRed's prompt structure)
 
 ### Key Innovations
@@ -36,12 +36,13 @@ Implement a **Pi package** that adapts FireRed-OpenStoryline's skill-based video
 | Aspect | FireRed | Pi Package |
 |--------|---------|-----------|
 | **LLM Framework** | LangChain agents | Pi framework with subagents |
-| **Vision Model** | Cloud VLM (API) | MLX-VLM (local, quantized) |
-| **Audio I/O** | Cloud TTS/STT | MLX-Audio + Whisper (local) |
-| **Render Engine** | MoviePy + FFmpeg | Remotion Engine (React-based stream trees) |
+| **Vision Model** | Cloud VLM (API) | MLX CLI (`mlx-vlm serve` + REST API) |
+| **Audio I/O** | Cloud TTS/STT | MLX CLI (`mlx-audio tts`) + Whisper CLI |
+| **Render Engine** | MoviePy + FFmpeg | Remotion CLI (stream trees → MP4) |
 | **Task Routing** | NodeManager + Skills | Pi Subagents + Skill definitions |
 | **Prompts** | Markdown task prompts | Template engine with Skill metadata |
 | **Execution** | Sequential tools | Chain & Parallel subagent execution |
+| **AI Integration** | SDK/Library | **CLI via spawn/exec** |
 
 ---
 
@@ -90,17 +91,16 @@ Implement a **Pi package** that adapts FireRed-OpenStoryline's skill-based video
         │                           │                           │
         ▼                           ▼                           ▼
    ┌─────────────────┐     ┌──────────────────┐    ┌──────────────────┐
-   │  MLX Subagents  │     │ Workflow Stage   │    │ Timeline Render  │
-   │                 │     │ Subagents        │    │ Subagent         │
-   │ • VLM (vision)  │     │                  │    │ (@neox/remotion- │
-   │ • Audio (TTS)   │     │ • Load media     │    │  engine)         │
-   │ • Whisper (STT) │     │ • Understand     │    │                  │
-   └─────────────────┘     │ • Filter/Group   │    │ • Build JSON     │
-                           │ • Generate text  │    │   stream tree    │
-                           │ • Generate voice │    │ • Render to MP4  │
-                           │ • Select music   │    │ • Multi-aspect   │
-                           └──────────────────┘    └──────────────────┘
-
+   │  MLX CLI        │     │ Workflow Stage   │    │ Timeline Render  │
+   │  Subagents      │     │ Subagents        │    │ Subagent         │
+   │                 │     │                  │    │ (@neox/remotion- │
+   │ • mlx-vlm serve │     │ • Load media     │    │  engine)         │
+   │   (REST API)    │     │ • Understand     │    │                  │
+   │ • mlx-audio tts │     │ • Filter/Group   │    │ • Build JSON     │
+   │ • whisper STT   │     │ • Generate text  │    │   stream tree    │
+   │ • spawn/exec    │     │ • Generate voice │    │ • Render to MP4  │
+   │   CLI           │     │ • Select music   │    │ • Multi-aspect   │
+   └─────────────────┘     └──────────────────┘    └──────────────────┘
 ```
 
 ---
@@ -122,7 +122,7 @@ interface SkillDefinition {
 
   // Workflow structure
   stages: WorkflowStage[];
-  dependencies?: Record<string, string[]>; // stage_id -> prerequisite_ids
+  dependencies?: Record<string, string[]>;
   
   // Prompt configuration
   promptTemplate: {
@@ -161,21 +161,15 @@ interface WorkflowStage {
   name: string;
   description: string;
   
-  // Operation mode
   operation: {
     type: "parallel" | "sequential" | "conditional";
     tasks: TaskDefinition[];
   };
 
-  // Can be skipped?
   optional: boolean;
-  
-  // Dependency graph
-  requires?: string[]; // stage_ids
-  
-  // Output handling
+  requires?: string[];
   outputSchema?: Record<string, unknown>;
-  outputToTimeline?: boolean;  // Should output flow to remotion-engine?
+  outputToTimeline?: boolean;
 }
 
 interface TaskDefinition {
@@ -183,14 +177,14 @@ interface TaskDefinition {
   name: string;
   
   // Execution via subagent
-  subagentType: "llm" | "mlx_vlm" | "mlx_audio" | "whisper" | "timeline_render";
+  subagentType: "llm" | "mlx_vlm_cli" | "mlx_audio_cli" | "whisper_cli" | "timeline_render" | "node_exec";
   
   // Prompt template with substitutions
-  promptKey: string; // tasks/{skillname}/{lang}/{promptKey}.md
+  promptKey: string;
   
   // Parameter mapping
-  inputMapping: Record<string, string>; // param -> path in context
-  outputMapping: Record<string, string>; // result field -> storage key
+  inputMapping: Record<string, string>;
+  outputMapping: Record<string, string>;
 }
 ```
 
@@ -201,112 +195,46 @@ Structure mirroring FireRed's `/prompts` directory:
 ```
 prompts/
 ├── system/
-│   ├── instruction.md          # Main system prompt
-│   └── skill_router.md         # Skill selection logic
+│   ├── instruction.md
+│   └── skill_router.md
 │
 ├── skills/
 │   ├── default_editing_workflow/
-│   │   ├── SKILL.md            # Skill metadata + workflow definition
-│   │   ├── description.md      # Human-readable description
-│   │   └── stages.json         # WorkflowStage definitions
-│   │
-│   ├── speech_rough_cut/
 │   │   ├── SKILL.md
 │   │   └── stages.json
-│   │
-│   └── ai_transition_editing/
-│       ├── SKILL.md
-│       └── stages.json
 │
 ├── tasks/
 │   ├── understand_clips/
-│   │   ├── en/
-│   │   │   ├── system.md           # VLM system prompt
-│   │   │   └── detail.md           # Detailed instructions
-│   │   └── zh/
-│   │       ├── system.md
-│   │       └── detail.md
-│   │
-│   ├── generate_script/
 │   │   ├── en/system.md
-│   │   ├── zh/system.md
-│   │   └── examples.json           # Few-shot examples
+│   │   └── zh/system.md
 │   │
 │   ├── generate_voiceover/
-│   │   ├── en/system.md
-│   │   └── audio_config.json
-│   │
-│   ├── generate_ai_transition/
-│   │   ├── en/system.md
-│   │   └── transition_strategies.json
-│   │
-│   ├── filter_clips/
-│   │   ├── en/system.md
-│   │   └── selection_criteria.json
-│   │
-│   ├── group_clips/
-│   │   ├── en/system.md
-│   │   └── grouping_rules.json
-│   │
-│   ├── select_bgm/
-│   │   ├── en/system.md
-│   │   └── music_library.json
-│   │
-│   ├── speech_rough_cut/
-│   │   ├── en/system.md
-│   │   └── asr_config.json
+│   │   ├── en/config.json
+│   │   └── zh/config.json
 │   │
 │   └── build_timeline/
 │       ├── en/system.md
-│       └── remotion_schema.json    # Remotion Engine stream tree config
+│       └── remotion_schema.json
 │
 └── templates/
-    ├── task_prompt_template.hbs   # Handlebars template
-    └── variables.schema.json       # Variable definitions
+    └── task_prompt_template.hbs
 ```
 
 ### 3. **Subagent Types**
 
 ```typescript
-// subagents.ts
 type SubagentType = 
   | "llm"                    // Main LLM for orchestration
-  | "mlx_vlm"                // Vision-language model
-  | "mlx_audio"              // Audio synthesis (TTS)
-  | "whisper"                // Speech-to-text
+  | "mlx_vlm_cli"            // MLX VLM via CLI + REST API
+  | "mlx_audio_cli"          // MLX Audio TTS via CLI
+  | "whisper_cli"            // Whisper STT via CLI
   | "timeline_render"        // Remotion Engine render
-  | "node_exec";             // Node.js execution for complex logic
-
-interface SubagentInstance {
-  type: SubagentType;
-  model?: string;            // Model name/path
-  config: Record<string, unknown>;
-  capabilities: string[];
-}
-
-// Subagent pool
-class SubagentPool {
-  private agents: Map<SubagentType, SubagentInstance[]>;
-  
-  async getAgent(type: SubagentType): Promise<SubagentInstance>;
-  async releaseAgent(type: SubagentType, agent: SubagentInstance): Promise<void>;
-  async initialize(): Promise<void>;
-  async shutdown(): Promise<void>;
-}
+  | "node_exec";             // Node.js execution
 ```
 
 ---
 
 ## 🎨 Skill System
-
-### **Skill Definition Structure** (extends FireRed)
-
-Each skill is a reusable workflow unit combining:
-1. **Metadata** (name, description, type, version)
-2. **Workflow stages** (what steps to execute)
-3. **Prompt templates** (how to instruct each step)
-4. **Subagent routing** (which service handles each task)
-5. **Render specifications** (aspect ratios, formats for final output)
 
 ### **Example: `default_editing_workflow_skill`**
 
@@ -315,7 +243,7 @@ Each skill is a reusable workflow unit combining:
 ---
 name: default_editing_workflow_skill
 type: WORKFLOW
-description: Universal vlog editing workflow for daily/travel videos
+description: Universal vlog editing workflow using MLX CLI & Remotion
 version: 1.0.0
 tags: [vlog, editing, general]
 renderOutput:
@@ -325,34 +253,9 @@ renderOutput:
   bitrate: "5000k"
 ---
 
-# Workflow Definition (JSON)
-# File: stages.json
+# stages.json
 {
   "stages": [
-    {
-      "id": "media_init",
-      "name": "Media Initialization",
-      "operation": {
-        "type": "sequential",
-        "tasks": [
-          {
-            "id": "search_media",
-            "name": "Search & Download Media",
-            "subagentType": "node_exec",
-            "optional": true,
-            "promptKey": "search_media/system"
-          },
-          {
-            "id": "load_media",
-            "name": "Load Media Metadata",
-            "subagentType": "node_exec",
-            "promptKey": "load_media/system",
-            "optional": false
-          }
-        ]
-      }
-    },
-    
     {
       "id": "understanding",
       "name": "Media Understanding & Analysis",
@@ -360,55 +263,15 @@ renderOutput:
         "type": "sequential",
         "tasks": [
           {
-            "id": "split_shots",
-            "name": "Shot Segmentation",
-            "subagentType": "node_exec",
-            "optional": true,
-            "promptKey": "split_shots/system"
-          },
-          {
             "id": "understand_clips",
-            "name": "Content Understanding",
-            "subagentType": "mlx_vlm",
-            "optional": true,
+            "name": "Content Understanding (MLX-VLM)",
+            "subagentType": "mlx_vlm_cli",
             "promptKey": "understand_clips/en/system_detail",
-            "requires": ["split_shots"],
-            "inputMapping": {
-              "clips": "split_shots.output.clips"
-            },
-            "outputMapping": {
-              "captions": "context.clip_captions"
-            }
+            "optional": true
           }
         ]
       }
     },
-
-    {
-      "id": "clip_selection",
-      "name": "Intelligent Clip Selection",
-      "operation": {
-        "type": "sequential",
-        "tasks": [
-          {
-            "id": "filter_clips",
-            "name": "Clip Filtering",
-            "subagentType": "llm",
-            "optional": true,
-            "promptKey": "filter_clips/en/system"
-          },
-          {
-            "id": "group_clips",
-            "name": "Narrative Grouping",
-            "subagentType": "llm",
-            "optional": false,
-            "promptKey": "group_clips/en/system",
-            "requires": ["understand_clips"]
-          }
-        ]
-      }
-    },
-
     {
       "id": "content_generation",
       "name": "Creative Content Generation",
@@ -419,28 +282,17 @@ renderOutput:
             "id": "generate_script",
             "name": "Script Generation",
             "subagentType": "llm",
-            "optional": true,
             "promptKey": "generate_script/en/system"
           },
           {
             "id": "generate_voiceover",
-            "name": "Voiceover Generation",
-            "subagentType": "mlx_audio",
-            "optional": true,
-            "promptKey": "generate_voiceover/en/system"
-          },
-          {
-            "id": "select_bgm",
-            "name": "Background Music Selection",
-            "subagentType": "llm",
-            "optional": true,
-            "promptKey": "select_bgm/en/system"
+            "name": "Voiceover Generation (MLX-Audio)",
+            "subagentType": "mlx_audio_cli",
+            "promptKey": "generate_voiceover/en/config"
           }
         ]
-      },
-      "parallel": false
+      }
     },
-
     {
       "id": "finalization",
       "name": "Timeline & Rendering",
@@ -451,15 +303,12 @@ renderOutput:
             "id": "build_timeline",
             "name": "Build Remotion Stream Tree",
             "subagentType": "node_exec",
-            "optional": false,
-            "promptKey": "build_timeline/en/system",
-            "outputToTimeline": true
+            "promptKey": "build_timeline/en/system"
           },
           {
             "id": "render_video",
             "name": "Render Video (Remotion Engine)",
             "subagentType": "timeline_render",
-            "optional": false,
             "promptKey": "render_video/en/config"
           }
         ]
@@ -476,13 +325,12 @@ renderOutput:
 ### **Chain Execution** (Sequential)
 
 ```typescript
-// For tasks with dependencies
 import { chain } from "@nicobailon/pi-subagents";
 
 const mediaToScript = chain([
   {
     id: "understand_clips",
-    agent: mlxVLMSubagent,
+    agent: mlxVLMCLISubagent,
     prompt: await loadPrompt("understand_clips/en/system_detail"),
     input: { clips: mediaContext.clips }
   },
@@ -512,7 +360,6 @@ const result = await mediaToScript.execute();
 ### **Parallel Execution** (Independent Tasks)
 
 ```typescript
-// For independent operations (e.g., music selection + element recommendations)
 import { parallel } from "@nicobailon/pi-subagents";
 
 const contentEnhancement = parallel([
@@ -523,160 +370,164 @@ const contentEnhancement = parallel([
     input: { groupInfo, mood: context.mood }
   },
   {
-    id: "elementrec_transition",
-    agent: llmSubagent,
-    prompt: await loadPrompt("elementrec_transition/en/system"),
-    input: { groupInfo, style: context.style }
+    id: "generate_voiceover",
+    agent: mlxAudioCLISubagent,
+    prompt: await loadPrompt("generate_voiceover/en/config"),
+    input: { scripts: scripts, voice: "en_US_1" }
   }
 ]);
 
-const [bgm, transitions] = await contentEnhancement.execute();
-```
-
-### **Conditional Branching**
-
-```typescript
-// Example: Skip voiceover if user requests "silent mode"
-import { conditional } from "@nicobailon/pi-subagents";
-
-const voiceoverStep = conditional(
-  context.includeVoiceover === true,
-  {
-    id: "generate_voiceover",
-    agent: mlxAudioSubagent,
-    prompt: await loadPrompt("generate_voiceover/en/system"),
-    input: { script: contentGen.script, voice: context.voicePreference }
-  },
-  {
-    id: "skip_voiceover",
-    agent: llmSubagent,
-    prompt: "Return empty voiceover marker",
-    input: {}
-  }
-);
+const [bgm, voiceover] = await contentEnhancement.execute();
 ```
 
 ---
 
-## 📝 Prompt Template System
+## 🎯 MLX CLI Integration
 
-### **Template Syntax** (Handlebars-based)
+### **1. MLX-VLM Subagent (CLI-based)**
 
-```handlebars
-{{!-- prompts/tasks/generate_script/en/system.md --}}
+MLX-VLM provides command-line tools for vision-language model inference.
 
-# Role Setup
+#### **CLI Usage**
 
-You are a seasoned short-form video and vlog copywriting strategist...
+```bash
+# Start MLX-VLM server (REST API)
+mlx-vlm serve --model phi-3-vision-128k-instruct --port 8000
 
-# Goal
-
-Your task is to use the user-provided **[user_request]** and **[group_infos]** 
-to write a voiceover script for each group.
-
-# Input Data
-
-1. **[user_request]**: {{userRequest}}
-2. **[overall]**: {{overall}}
-3. **[style]**: {{style}}
-4. **[group_infos]**: 
-{{#each groupInfos}}
-  - Group {{@index}}: {{this.summary}}
-    Script budget: {{this.scriptCharsBudget}} chars
-{{/each}}
-
-# Style Configuration
-
-{{#if style.equals "Lyrical & Poetic"}}
-Follow the lyrical approach: use metaphors, sensory details, imagery...
-{{else if style.equals "Humorous & Witty"}}
-Follow the humorous approach: use exaggeration, wit, unexpected twists...
-{{else}}
-Follow the daily mumbling approach: genuine inner monologue, everyday tone...
-{{/if}}
-
-# Creation Principles
-
-1. **Tone & Perspective**
-   - Use first-person "I" throughout
-   - Match language style to {{style}}
-   - {{#if strictLanguage}}No canned phrases{{/if}}
-
-...
-
-# Output Format
-
-```json
-{
-  "group_scripts": [
-    {{#each groupInfos}}
-    {
-      "group_id": "{{this.id}}",
-      "raw_text": "... string within {{this.scriptCharsBudget}} chars ..."
-    }{{#unless @last}},{{/unless}}
-    {{/each}}
-  ],
-  "title": "3-15 word title"
-}
-```
+# Or direct CLI for inference
+mlx-vlm predict --model phi-3-vision-128k-instruct \
+  --image ./clip-1.jpg \
+  --prompt "Describe this video frame in 100 words..."
 ```
 
----
-
-## 🎯 MLX Integration
-
-### **1. MLX-VLM Subagent** (Replace Cloud VLM)
+#### **Subagent Implementation** (Node.js wrapper)
 
 ```typescript
-// mlx_vlm_subagent.ts
-import { MLXVisionLanguageModel } from "mlx-vlm";
+// src/subagents/mlx_vlm_cli_subagent.ts
 
-class MLXVLMSubagent {
-  private model: MLXVisionLanguageModel;
-  private config: MLXVLMConfig;
+import { spawn } from "child_process";
+import axios from "axios";
 
-  constructor(config: MLXVLMConfig) {
+class MLXVLMCLISubagent {
+  private apiUrl: string;
+  private modelName: string;
+  private serverProcess: ChildProcess | null = null;
+  private config: MLXVLMCLIConfig;
+
+  constructor(config: MLXVLMCLIConfig) {
+    this.apiUrl = config.apiUrl || "http://localhost:8000";
+    this.modelName = config.modelName || "phi-3-vision-128k-instruct";
     this.config = config;
   }
 
-  async initialize(): Promise<void> {
-    this.model = await MLXVisionLanguageModel.load(
-      this.config.modelPath,
-      {
-        quantization: this.config.quantization || "4-bit",
-        device: this.config.device || "auto",
+  /**
+   * Start MLX-VLM server
+   */
+  async startServer(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const args = [
+        "serve",
+        "--model",
+        this.modelName,
+        "--port",
+        this.config.port?.toString() || "8000",
+      ];
+
+      if (this.config.device) {
+        args.push("--device", this.config.device);
       }
-    );
+      if (this.config.quantization) {
+        args.push("--quantization", this.config.quantization);
+      }
+
+      this.serverProcess = spawn("mlx-vlm", args);
+
+      this.serverProcess.stdout?.on("data", (data) => {
+        const output = data.toString();
+        if (output.includes("Server running") || output.includes("listening")) {
+          // Wait for server to fully initialize
+          setTimeout(resolve, 1000);
+        }
+      });
+
+      this.serverProcess.stderr?.on("data", (data) => {
+        console.error(`MLX-VLM stderr: ${data}`);
+      });
+
+      this.serverProcess.on("error", (err) => {
+        reject(new Error(`Failed to start MLX-VLM server: ${err.message}`));
+      });
+
+      // Safety timeout
+      setTimeout(() => resolve(), 5000);
+    });
   }
 
+  /**
+   * Call MLX-VLM via REST API (server must be running)
+   */
   async execute(input: {
-    images: string[];
+    images: string[];  // Local file paths
     prompt: string;
     temperature?: number;
     maxTokens?: number;
   }): Promise<{
     response: string;
-    tokensUsed: number;
     processingTime: number;
   }> {
     const startTime = Date.now();
 
-    const response = await this.model.generate(
-      input.prompt,
-      {
-        images: input.images,
-        temperature: input.temperature || 0.7,
-        maxTokens: input.maxTokens || 512,
-      }
-    );
+    try {
+      // Convert image to base64
+      const imageData = await Promise.all(
+        input.images.map(async (path) => {
+          const buffer = await fs.readFile(path);
+          return buffer.toString("base64");
+        })
+      );
 
-    return {
-      response: response.text,
-      tokensUsed: response.tokensUsed,
-      processingTime: Date.now() - startTime,
-    };
+      // Call MLX-VLM REST endpoint
+      const response = await axios.post(
+        `${this.apiUrl}/v1/chat/completions`,
+        {
+          model: this.modelName,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: input.prompt,
+                },
+                ...imageData.map((data) => ({
+                  type: "image_url",
+                  image_url: {
+                    url: `data:image/jpeg;base64,${data}`,
+                  },
+                })),
+              ],
+            },
+          ],
+          temperature: input.temperature ?? 0.7,
+          max_tokens: input.maxTokens ?? 512,
+        },
+        {
+          timeout: 60000,
+        }
+      );
+
+      return {
+        response: response.data.choices[0].message.content,
+        processingTime: Date.now() - startTime,
+      };
+    } catch (error) {
+      throw new Error(`MLX-VLM API call failed: ${error.message}`);
+    }
   }
 
+  /**
+   * Understand a single clip
+   */
   async understandClip(
     clipPath: string,
     systemPrompt: string
@@ -693,198 +544,497 @@ class MLXVLMSubagent {
       aesScore: parseFloat(parsed.aes_score),
     };
   }
+
+  /**
+   * Shutdown server
+   */
+  async shutdown(): Promise<void> {
+    if (this.serverProcess) {
+      this.serverProcess.kill();
+      this.serverProcess = null;
+    }
+  }
 }
 
-interface MLXVLMConfig {
-  modelPath: string;
-  quantization?: "4-bit" | "8-bit";
+interface MLXVLMCLIConfig {
+  modelName?: string;
+  apiUrl?: string;
+  port?: number;
   device?: "auto" | "cpu" | "gpu";
-  maxConcurrency?: number;
+  quantization?: "4-bit" | "8-bit";
 }
 ```
 
-### **2. MLX-Audio Subagent** (Replace Cloud TTS)
+#### **Task Execution**
 
 ```typescript
-// mlx_audio_subagent.ts
-import { MLXAudioSynthesizer } from "mlx-audio";
+// Task: understand_clips
+const understandClipsTask = {
+  id: "understand_clips",
+  name: "Content Understanding",
+  subagentType: "mlx_vlm_cli",
+  execute: async (context: ExecutionContext) => {
+    const vlmAgent = new MLXVLMCLISubagent({
+      modelName: "phi-3-vision-128k-instruct",
+      port: 8000,
+      device: "auto",
+    });
 
-class MLXAudioSubagent {
-  private tts: MLXAudioSynthesizer;
-  private config: MLXAudioConfig;
+    // Start server if not already running
+    await vlmAgent.startServer();
 
-  constructor(config: MLXAudioConfig) {
+    const clips = context.getMediaClips();
+    const systemPrompt = await context.loadPrompt("understand_clips/en/system_detail");
+
+    const captions: Record<string, any> = {};
+
+    for (const clip of clips) {
+      const result = await vlmAgent.understandClip(clip.path, systemPrompt);
+      captions[clip.id] = result;
+    }
+
+    await vlmAgent.shutdown();
+
+    return {
+      captions,
+      clipCount: clips.length,
+    };
+  },
+};
+```
+
+---
+
+### **2. MLX-Audio Subagent (CLI-based)**
+
+MLX-Audio provides CLI tools for text-to-speech synthesis.
+
+#### **CLI Usage**
+
+```bash
+# Generate speech from text
+mlx-audio tts \
+  --model Kokoro-82M \
+  --text "Welcome to my vlog" \
+  --voice en_US_1 \
+  --output voice-1.wav \
+  --speed 1.0 \
+  --pitch 1.0
+
+# Batch TTS
+mlx-audio tts \
+  --model Kokoro-82M \
+  --input-file scripts.json \
+  --output-dir ./voiceovers/ \
+  --voice en_US_1
+```
+
+#### **Subagent Implementation**
+
+```typescript
+// src/subagents/mlx_audio_cli_subagent.ts
+
+import { spawn } from "child_process";
+import { promises as fs } from "fs";
+import path from "path";
+
+class MLXAudioCLISubagent {
+  private modelName: string;
+  private config: MLXAudioCLIConfig;
+
+  constructor(config: MLXAudioCLIConfig) {
+    this.modelName = config.modelName || "Kokoro-82M";
     this.config = config;
   }
 
-  async initialize(): Promise<void> {
-    this.tts = await MLXAudioSynthesizer.load(
-      this.config.modelPath,
-      {
-        device: this.config.device || "auto",
-        quantization: this.config.quantization || "4-bit",
-      }
-    );
-  }
-
+  /**
+   * Generate speech via MLX-Audio CLI
+   */
   async synthesize(input: {
     text: string;
     voice?: string;
-    language?: string;
     speed?: number;
     pitch?: number;
-  }): Promise<{
-    audioPath: string;
-    duration: number;
-    waveform: Float32Array;
-  }> {
-    const audio = await this.tts.synthesize(input.text, {
-      voice: input.voice || this.config.defaultVoice,
-      language: input.language || "en",
-      speed: input.speed || 1.0,
-      pitch: input.pitch || 1.0,
-    });
+    outputPath: string;
+  }): Promise<{ audioPath: string; duration: number }> {
+    return new Promise((resolve, reject) => {
+      const args = [
+        "tts",
+        "--model",
+        this.modelName,
+        "--text",
+        input.text,
+        "--voice",
+        input.voice || this.config.defaultVoice || "en_US_1",
+        "--output",
+        input.outputPath,
+        "--speed",
+        (input.speed || 1.0).toString(),
+        "--pitch",
+        (input.pitch || 1.0).toString(),
+      ];
 
-    const audioPath = await this.saveAudio(audio);
+      if (this.config.device) {
+        args.push("--device", this.config.device);
+      }
 
-    return {
-      audioPath,
-      duration: audio.duration,
-      waveform: audio.waveform,
-    };
-  }
+      const process = spawn("mlx-audio", args);
+      let stdout = "";
+      let stderr = "";
 
-  async generateVoiceover(
-    scripts: { groupId: string; text: string }[],
-    voice: string
-  ): Promise<VoiceoverOutput> {
-    const voiceovers: VoiceoverSegment[] = [];
-
-    const results = await Promise.all(
-      scripts.map(script =>
-        this.synthesize({
-          text: script.text,
-          voice,
-        })
-      )
-    );
-
-    for (let i = 0; i < scripts.length; i++) {
-      voiceovers.push({
-        groupId: scripts[i].groupId,
-        audioPath: results[i].audioPath,
-        duration: results[i].duration,
+      process.stdout?.on("data", (data) => {
+        stdout += data.toString();
       });
-    }
 
-    return { segments: voiceovers };
+      process.stderr?.on("data", (data) => {
+        stderr += data.toString();
+      });
+
+      process.on("close", async (code) => {
+        if (code === 0) {
+          try {
+            // Try to extract duration from output or use ffprobe
+            const duration = await this.getAudioDuration(input.outputPath);
+            resolve({
+              audioPath: input.outputPath,
+              duration,
+            });
+          } catch (err) {
+            reject(new Error(`Failed to get audio duration: ${err.message}`));
+          }
+        } else {
+          reject(new Error(`MLX-Audio TTS failed: ${stderr}`));
+        }
+      });
+
+      process.on("error", (err) => {
+        reject(new Error(`Failed to spawn mlx-audio: ${err.message}`));
+      });
+    });
   }
 
-  private async saveAudio(audio: AudioData): Promise<string> {
-    const path = `${this.config.cacheDir}/${generateUUID()}.wav`;
-    await fs.writeFile(path, audio.buffer);
-    return path;
+  /**
+   * Batch TTS using input file
+   */
+  async synthesizeBatch(input: {
+    inputFile: string;  // JSON file with [{id, text, voice, ...}, ...]
+    outputDir: string;
+    voice?: string;
+    speed?: number;
+    pitch?: number;
+  }): Promise<Array<{ id: string; audioPath: string; duration: number }>> {
+    return new Promise((resolve, reject) => {
+      const args = [
+        "tts",
+        "--model",
+        this.modelName,
+        "--input-file",
+        input.inputFile,
+        "--output-dir",
+        input.outputDir,
+        "--voice",
+        input.voice || this.config.defaultVoice || "en_US_1",
+        "--speed",
+        (input.speed || 1.0).toString(),
+        "--pitch",
+        (input.pitch || 1.0).toString(),
+      ];
+
+      if (this.config.device) {
+        args.push("--device", this.config.device);
+      }
+
+      const process = spawn("mlx-audio", args);
+      let stdout = "";
+      let stderr = "";
+
+      process.stdout?.on("data", (data) => {
+        stdout += data.toString();
+      });
+
+      process.stderr?.on("data", (data) => {
+        stderr += data.toString();
+      });
+
+      process.on("close", async (code) => {
+        if (code === 0) {
+          try {
+            // Read input file to map IDs
+            const inputData = JSON.parse(await fs.readFile(input.inputFile, "utf-8"));
+            const results = [];
+
+            for (const item of inputData) {
+              const audioFile = `${input.outputDir}/${item.id || item.text.slice(0, 20)}.wav`;
+              const duration = await this.getAudioDuration(audioFile);
+
+              results.push({
+                id: item.id || item.text.slice(0, 20),
+                audioPath: audioFile,
+                duration,
+              });
+            }
+
+            resolve(results);
+          } catch (err) {
+            reject(new Error(`Failed to process batch output: ${err.message}`));
+          }
+        } else {
+          reject(new Error(`MLX-Audio batch TTS failed: ${stderr}`));
+        }
+      });
+
+      process.on("error", (err) => {
+        reject(new Error(`Failed to spawn mlx-audio: ${err.message}`));
+      });
+    });
+  }
+
+  /**
+   * Get audio duration using ffprobe
+   */
+  private async getAudioDuration(audioPath: string): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const process = spawn("ffprobe", [
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1:nofile=1",
+        audioPath,
+      ]);
+
+      let duration = "";
+
+      process.stdout?.on("data", (data) => {
+        duration += data.toString();
+      });
+
+      process.on("close", (code) => {
+        if (code === 0) {
+          resolve(parseFloat(duration.trim()));
+        } else {
+          reject(new Error("ffprobe failed"));
+        }
+      });
+
+      process.on("error", (err) => {
+        reject(err);
+      });
+    });
   }
 }
 
-interface MLXAudioConfig {
-  modelPath: string;
-  defaultVoice: string;
-  quantization?: "4-bit" | "8-bit";
+interface MLXAudioCLIConfig {
+  modelName?: string;
+  defaultVoice?: string;
   device?: "auto" | "cpu" | "gpu";
-  cacheDir: string;
 }
 ```
 
-### **3. Whisper Subagent** (Replace Cloud STT)
+#### **Task Execution**
 
 ```typescript
-// whisper_subagent.ts
-import * as Whisper from "@xenova/transformers/dist/transformers.min";
+// Task: generate_voiceover
+const generateVoiceoverTask = {
+  id: "generate_voiceover",
+  name: "Voiceover Generation",
+  subagentType: "mlx_audio_cli",
+  execute: async (context: ExecutionContext) => {
+    const audioAgent = new MLXAudioCLISubagent({
+      modelName: "Kokoro-82M",
+      defaultVoice: context.voicePreference || "en_US_1",
+      device: "auto",
+    });
 
-class WhisperSubagent {
-  private processor: any;
-  private model: any;
-  private config: WhisperConfig;
+    const scripts = context.getStageOutput("generate_script");
+    const outputDir = path.join(context.cacheDir, "voiceovers");
 
-  constructor(config: WhisperConfig) {
+    // Prepare batch input file
+    const batchInput = scripts.map((script, idx) => ({
+      id: `vo-${script.groupId}`,
+      text: script.raw_text,
+      voice: context.voicePreference || "en_US_1",
+    }));
+
+    const inputFile = path.join(context.cacheDir, "tts-batch.json");
+    await fs.writeFile(inputFile, JSON.stringify(batchInput, null, 2));
+
+    // Run batch TTS
+    const results = await audioAgent.synthesizeBatch({
+      inputFile,
+      outputDir,
+      voice: context.voicePreference || "en_US_1",
+    });
+
+    return {
+      segments: results.map((r) => ({
+        groupId: r.id.replace("vo-", ""),
+        audioPath: r.audioPath,
+        duration: r.duration,
+      })),
+    };
+  },
+};
+```
+
+---
+
+### **3. Whisper Subagent (CLI-based)**
+
+Whisper provides command-line tools for speech-to-text transcription.
+
+#### **CLI Usage**
+
+```bash
+# Transcribe audio file
+whisper audio.wav \
+  --model base \
+  --language en \
+  --output_format json \
+  --output_dir ./transcripts/
+
+# Transcribe with timestamps
+whisper video.mp4 \
+  --model base \
+  --language auto \
+  --verbose False \
+  --output_format vtt
+```
+
+#### **Subagent Implementation**
+
+```typescript
+// src/subagents/whisper_cli_subagent.ts
+
+import { spawn } from "child_process";
+import { promises as fs } from "fs";
+import path from "path";
+
+class WhisperCLISubagent {
+  private modelSize: string;
+  private config: WhisperCLIConfig;
+
+  constructor(config: WhisperCLIConfig) {
+    this.modelSize = config.modelSize || "base";
     this.config = config;
   }
 
-  async initialize(): Promise<void> {
-    const { AutoProcessor, AutoModelForSpeechSeq2Seq } = Whisper;
-
-    this.processor = await AutoProcessor.from_pretrained(
-      this.config.modelSize
-    );
-
-    this.model = await AutoModelForSpeechSeq2Seq.from_pretrained(
-      this.config.modelSize
-    );
-  }
-
+  /**
+   * Transcribe audio/video file via Whisper CLI
+   */
   async transcribe(input: {
-    audioPath: string;
+    mediaPath: string;
     language?: string;
-    returnTimestamps?: boolean;
+    outputDir?: string;
+    outputFormat?: "txt" | "json" | "vtt" | "srt";
+    verbose?: boolean;
   }): Promise<{
     text: string;
     segments: TranscriptionSegment[];
     language: string;
+    duration: number;
   }> {
-    const audio = await this.loadAudio(input.audioPath);
-    const inputs = await this.processor(audio);
-    const outputs = await this.model.generate(**inputs);
-    const decoded = await this.processor.batch_decode(outputs, {
-      skip_special_tokens: true,
+    const outputDir = input.outputDir || "./.whisper-cache";
+
+    return new Promise((resolve, reject) => {
+      const args = [
+        input.mediaPath,
+        "--model",
+        this.modelSize,
+        "--language",
+        input.language || "auto",
+        "--output_format",
+        input.outputFormat || "json",
+        "--output_dir",
+        outputDir,
+        "--verbose",
+        (input.verbose ?? false).toString(),
+      ];
+
+      if (this.config.device === "cuda") {
+        args.push("--device", "cuda");
+      }
+
+      const process = spawn("whisper", args);
+      let stdout = "";
+      let stderr = "";
+
+      process.stdout?.on("data", (data) => {
+        stdout += data.toString();
+      });
+
+      process.stderr?.on("data", (data) => {
+        stderr += data.toString();
+      });
+
+      process.on("close", async (code) => {
+        if (code === 0) {
+          try {
+            // Read generated JSON output
+            const mediaName = path.basename(input.mediaPath);
+            const jsonPath = path.join(
+              outputDir,
+              `${path.parse(mediaName).name}.json`
+            );
+
+            const jsonData = JSON.parse(
+              await fs.readFile(jsonPath, "utf-8")
+            );
+
+            resolve({
+              text: jsonData.text,
+              segments: jsonData.segments.map(
+                (seg: any) => ({
+                  id: seg.id,
+                  start: seg.start,
+                  end: seg.end,
+                  text: seg.text,
+                })
+              ),
+              language: jsonData.language,
+              duration: jsonData.duration,
+            });
+          } catch (err) {
+            reject(new Error(`Failed to parse Whisper output: ${err.message}`));
+          }
+        } else {
+          reject(new Error(`Whisper transcription failed: ${stderr}`));
+        }
+      });
+
+      process.on("error", (err) => {
+        reject(new Error(`Failed to spawn whisper: ${err.message}`));
+      });
     });
-
-    const text = decoded[0];
-    const segments = await this.extractSegments(
-      audio,
-      outputs,
-      input.returnTimestamps
-    );
-
-    return { text, segments, language: input.language || "auto" };
   }
 
+  /**
+   * Transcribe with timestamp extraction for rough cut
+   */
   async speechRoughCut(input: {
     videoPath: string;
     systemPrompt: string;
   }): Promise<SpeechRoughCutOutput> {
-    const audioPath = await this.extractAudio(input.videoPath);
     const transcription = await this.transcribe({
-      audioPath,
-      returnTimestamps: true,
+      mediaPath: input.videoPath,
+      language: "auto",
+      outputFormat: "json",
     });
 
+    // Return segments for processing
     return {
       segments: transcription.segments,
       transcript: transcription.text,
+      language: transcription.language,
+      duration: transcription.duration,
     };
-  }
-
-  private async loadAudio(path: string): Promise<Float32Array> {
-    // Load WAV/MP3 and convert to PCM float32
-  }
-
-  private async extractAudio(videoPath: string): Promise<string> {
-    // Use ffmpeg to extract audio stream
-  }
-
-  private async extractSegments(
-    audio: Float32Array,
-    outputs: any,
-    returnTimestamps: boolean
-  ): Promise<TranscriptionSegment[]> {
-    // Parse Whisper output into timestamped segments
   }
 }
 
-interface WhisperConfig {
-  modelSize: "tiny" | "base" | "small" | "medium" | "large";
-  device?: "auto" | "cpu" | "gpu";
+interface WhisperCLIConfig {
+  modelSize?: "tiny" | "base" | "small" | "medium" | "large";
+  device?: "auto" | "cpu" | "cuda";
 }
 
 interface TranscriptionSegment {
@@ -893,31 +1043,59 @@ interface TranscriptionSegment {
   end: number;
   text: string;
 }
+
+interface SpeechRoughCutOutput {
+  segments: TranscriptionSegment[];
+  transcript: string;
+  language: string;
+  duration: number;
+}
+```
+
+#### **Task Execution**
+
+```typescript
+// Task: speech_rough_cut
+const speechRoughCutTask = {
+  id: "speech_rough_cut",
+  name: "Speech Rough Cut",
+  subagentType: "whisper_cli",
+  execute: async (context: ExecutionContext) => {
+    const whisperAgent = new WhisperCLISubagent({
+      modelSize: "base",
+      device: "auto",
+    });
+
+    const videoPath = context.mediaPath;
+    const systemPrompt = await context.loadPrompt("speech_rough_cut/en/system");
+
+    const result = await whisperAgent.speechRoughCut({
+      videoPath,
+      systemPrompt,
+    });
+
+    return {
+      segments: result.segments,
+      transcript: result.transcript,
+      language: result.language,
+    };
+  },
+};
 ```
 
 ---
 
 ## 🎬 Remotion-Engine Integration
 
-### **1. Overview of @neox/remotion-engine**
-
-The **remotion-engine** is a render-only Remotion kernel that:
-- **No AI generation**: Stream tree is pure data structure (no `prompts.*` fields)
-- **No composition layer**: Host provides `Container` component + components registry
-- **Zod-validated**: Strict schema validation for stream trees
-- **Immer patches**: Mutations via JSON Patches from host
-- **Stream types**: `root`, `folder`, `video`, `audio`, `image`, `subtitle`, `component`
-- **Multi-aspect rendering**: Single source → 16x9, 9x16, 1x1 outputs
-
-### **2. Timeline Builder Subagent**
+### **1. Timeline Builder Subagent**
 
 ```typescript
-// timeline_render_subagent.ts
-import { RemotionEngine } from "@neox/remotion-engine";
-import type { Root, Stream } from "@neox/remotion-engine";
+// src/subagents/timeline_render_subagent.ts
+
+import { spawn } from "child_process";
+import { promises as fs } from "fs";
 
 class TimelineRenderSubagent {
-  private remotion: typeof RemotionEngine;
   private config: RenderConfig;
 
   constructor(config: RenderConfig) {
@@ -932,8 +1110,6 @@ class TimelineRenderSubagent {
     textElements?: TextElement[];
     theme?: string;
   }): Promise<Root> {
-    // Build Remotion stream tree from editing components
-
     const streamTree: Root = {
       id: "root",
       type: "root",
@@ -973,14 +1149,20 @@ class TimelineRenderSubagent {
         type: "video",
         src: clip.path,
         fit: "cover",
-        actions: [{ id: "a1", start: currentTime, end: currentTime + clip.duration }],
+        actions: [
+          {
+            id: "a1",
+            start: currentTime,
+            end: currentTime + clip.duration,
+          },
+        ],
       });
 
-      // Add text overlay if present
+      // Add text overlays
       const relevantText = input.textElements?.filter(
         (t) => t.groupId === clip.groupId
       );
-      
+
       if (relevantText && relevantText.length > 0) {
         for (const text of relevantText) {
           folder.children.push({
@@ -990,7 +1172,11 @@ class TimelineRenderSubagent {
             fontSize: text.fontSize || 48,
             color: text.color || "#FFFFFF",
             actions: [
-              { id: `a-${text.id}`, start: currentTime, end: currentTime + clip.duration }
+              {
+                id: `a-${text.id}`,
+                start: currentTime,
+                end: currentTime + clip.duration,
+              },
             ],
           });
         }
@@ -1000,7 +1186,7 @@ class TimelineRenderSubagent {
       currentTime += clip.duration;
     }
 
-    // Add background music as separate stream
+    // Add audio tracks
     if (input.bgm) {
       children.push({
         id: "bgm",
@@ -1010,14 +1196,17 @@ class TimelineRenderSubagent {
       });
     }
 
-    // Add voiceover tracks
     for (const vo of input.voiceovers) {
       children.push({
         id: `voiceover-${vo.groupId}`,
         type: "audio",
         src: vo.audioPath,
         actions: [
-          { id: `vo-a-${vo.groupId}`, start: vo.startTime || 0, end: (vo.startTime || 0) + vo.duration }
+          {
+            id: `vo-a-${vo.groupId}`,
+            start: vo.startTime || 0,
+            end: (vo.startTime || 0) + vo.duration,
+          },
         ],
       });
     }
@@ -1026,15 +1215,12 @@ class TimelineRenderSubagent {
   }
 
   private buildStylesheet(theme?: string): string {
-    // Generate CSS stylesheet for Remotion rendering
     const baseStyle = `.root { background: #000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }`;
-    
     if (theme === "dark") {
       return baseStyle + ` .subtitle { color: #fff; }`;
     } else if (theme === "light") {
       return baseStyle + ` .subtitle { color: #000; background: rgba(255,255,255,0.8); }`;
     }
-    
     return baseStyle;
   }
 
@@ -1043,21 +1229,17 @@ class TimelineRenderSubagent {
     outputPath: string,
     aspectRatios?: ("16x9" | "9x16" | "1x1")[]
   ): Promise<RenderResult> {
-    // Render video using remotion-engine CLI
-
     const formats = aspectRatios || ["16x9"];
     const results: RenderResult[] = [];
 
     for (const aspect of formats) {
       const { width, height } = this.getAspectDimensions(aspect);
-      
+
       const renderedPath = await this.renderWithRemotionCLI(
         streamTree,
         outputPath,
         width,
-        height,
-        this.config.fps,
-        this.config.bitrate
+        height
       );
 
       results.push({
@@ -1076,38 +1258,58 @@ class TimelineRenderSubagent {
     };
   }
 
+  /**
+   * Invoke remotion CLI for rendering
+   */
   private async renderWithRemotionCLI(
     streamTree: Root,
     outputPath: string,
     width: number,
-    height: number,
-    fps: number,
-    bitrate: string
+    height: number
   ): Promise<string> {
-    // Invoke: remotion render src/remotion.config.ts Root output.mp4 --props=./stream-tree.json
-    
     const propsFile = `${this.config.cacheDir}/${generateUUID()}-props.json`;
-    await fs.writeJSON(propsFile, { root: streamTree }, { spaces: 2 });
+    await fs.writeFile(
+      propsFile,
+      JSON.stringify({ root: streamTree }, null, 2)
+    );
 
     const finalPath = outputPath.replace(
       /\.mp4$/,
       `-${width}x${height}.mp4`
     );
 
-    await execa("remotion", [
-      "render",
-      "src/remotion.config.ts",
-      "Root",
-      finalPath,
-      `--props=${propsFile}`,
-      `--width=${width}`,
-      `--height=${height}`,
-      `--fps=${fps}`,
-      `--every-nth-frame=1`,
-      `--overwrite`,
-    ]);
+    return new Promise((resolve, reject) => {
+      const args = [
+        "render",
+        "src/remotion.config.ts",
+        "Root",
+        finalPath,
+        `--props=${propsFile}`,
+        `--width=${width}`,
+        `--height=${height}`,
+        `--fps=${this.config.fps}`,
+        "--overwrite",
+      ];
 
-    return finalPath;
+      const process = spawn("remotion", args);
+      let stderr = "";
+
+      process.stderr?.on("data", (data) => {
+        stderr += data.toString();
+      });
+
+      process.on("close", (code) => {
+        if (code === 0) {
+          resolve(finalPath);
+        } else {
+          reject(new Error(`Remotion render failed: ${stderr}`));
+        }
+      });
+
+      process.on("error", (err) => {
+        reject(new Error(`Failed to spawn remotion: ${err.message}`));
+      });
+    });
   }
 
   private getAspectDimensions(aspect: string): { width: number; height: number } {
@@ -1120,7 +1322,6 @@ class TimelineRenderSubagent {
   }
 
   private calculateDuration(streamTree: Root): number {
-    // Calculate total duration from stream tree
     let maxTime = 0;
     const walk = (node: any) => {
       if (node.children) {
@@ -1143,210 +1344,9 @@ interface RenderConfig {
   width: number;
   height: number;
   fps: number;
-  bitrate: string;
   cacheDir: string;
 }
-
-interface RenderResult {
-  success: boolean;
-  outputs: Array<{
-    aspect: "16x9" | "9x16" | "1x1";
-    width: number;
-    height: number;
-    path: string;
-    duration: number;
-  }>;
-  streamTree: Root;
-}
 ```
-
-### **3. Integration with Workflow**
-
-```typescript
-// Build timeline stage in skill workflow
-const buildTimelineTask = {
-  id: "build_timeline",
-  name: "Build Remotion Stream Tree",
-  subagentType: "timeline_render",
-  execute: async (context: ExecutionContext) => {
-    const timelineBuilder = new TimelineRenderSubagent({
-      width: 1080,
-      height: 1920,
-      fps: 30,
-      bitrate: "5000k",
-      cacheDir: context.cacheDir,
-    });
-
-    // Collect outputs from previous stages
-    const clips = context.getStageOutput("filter_clips")?.clips || [];
-    const voiceovers = context.getStageOutput("generate_voiceover")?.segments || [];
-    const bgm = context.getStageOutput("select_bgm")?.selectedMusic;
-    const textElements = context.getStageOutput("elementrec_text")?.elements || [];
-
-    // Build stream tree
-    const streamTree = await timelineBuilder.buildTimeline({
-      clips,
-      voiceovers,
-      bgm,
-      textElements,
-      theme: context.theme,
-    });
-
-    // Store for rendering stage
-    return {
-      streamTree,
-      duration: timelineBuilder.calculateDuration(streamTree),
-    };
-  },
-};
-
-// Render stage
-const renderVideoTask = {
-  id: "render_video",
-  name: "Render Video (Remotion Engine)",
-  subagentType: "timeline_render",
-  execute: async (context: ExecutionContext) => {
-    const timelineBuilder = new TimelineRenderSubagent({
-      width: 1080,
-      height: 1920,
-      fps: 30,
-      bitrate: "5000k",
-      cacheDir: context.cacheDir,
-    });
-
-    const { streamTree } = context.getStageOutput("build_timeline");
-
-    // Render with aspect ratio options
-    const result = await timelineBuilder.render(
-      streamTree,
-      `${context.outputDir}/video.mp4`,
-      ["16x9", "9x16"]  // Multi-aspect output
-    );
-
-    return {
-      success: result.success,
-      outputs: result.outputs,
-      streamTree: result.streamTree,
-    };
-  },
-};
-```
-
-### **4. Remotion-Engine Stream Tree Example**
-
-```json
-{
-  "id": "root",
-  "type": "root",
-  "width": 1080,
-  "height": 1920,
-  "fps": 30,
-  "isSeries": true,
-  "transition": "fade",
-  "transitionTime": 0.4,
-  "stylesheet": ".subtitle { font-family: Arial; color: #fff; font-size: 48px; }",
-  "children": [
-    {
-      "id": "scene-1",
-      "type": "folder",
-      "isSeries": false,
-      "children": [
-        {
-          "id": "bg-1",
-          "type": "image",
-          "src": "/media/thumbnail.jpg",
-          "fit": "cover",
-          "actions": [{ "id": "a1", "start": 0, "end": 3 }]
-        },
-        {
-          "id": "title-1",
-          "type": "subtitle",
-          "src": "Welcome to my vlog",
-          "fontSize": 72,
-          "color": "#FFFFFF",
-          "actions": [{ "id": "a2", "start": 0, "end": 3 }]
-        }
-      ]
-    },
-    {
-      "id": "voiceover-1",
-      "type": "audio",
-      "src": "/audio/voiceover-1.wav",
-      "actions": [{ "id": "vo1", "start": 0, "end": 3 }]
-    },
-    {
-      "id": "bgm",
-      "type": "audio",
-      "src": "/audio/background-music.mp3",
-      "actions": [{ "id": "bgm-a", "start": 0, "end": 60 }]
-    }
-  ]
-}
-```
-
----
-
-## 🔄 Implementation Roadmap
-
-### **Phase 1: Foundation** (Weeks 1-2)
-
-- [ ] Design skill system & workflow stages
-- [ ] Implement SkillDefinition TypeScript interface
-- [ ] Create prompt template engine with Handlebars
-- [ ] Set up pi-subagents basic orchestration
-
-**Deliverables:**
-- `src/skills/skill.ts`
-- `src/prompt/promptEngine.ts`
-- `src/orchestrator/orchestrator.ts`
-
-### **Phase 2: MLX Integration** (Weeks 3-4)
-
-- [ ] Implement MLXVLMSubagent (vision understanding)
-- [ ] Implement MLXAudioSubagent (text-to-speech)
-- [ ] Implement WhisperSubagent (speech-to-text)
-- [ ] Test local inference pipeline
-
-**Deliverables:**
-- `src/subagents/mlx_vlm_subagent.ts`
-- `src/subagents/mlx_audio_subagent.ts`
-- `src/subagents/whisper_subagent.ts`
-
-### **Phase 3: Remotion-Engine Integration** (Weeks 5-6)
-
-- [ ] Create TimelineRenderSubagent
-- [ ] Build stream tree builder from editing outputs
-- [ ] Integrate with remotion CLI
-- [ ] Multi-aspect rendering support
-
-**Deliverables:**
-- `src/subagents/timeline_render_subagent.ts`
-- `src/timeline/builder.ts`
-- Remotion config for Pi package
-
-### **Phase 4: Skill Implementations** (Weeks 7-8)
-
-- [ ] Adapt `default_editing_workflow_skill` to Pi format
-- [ ] Adapt `speech_rough_cut_skill`
-- [ ] Adapt `ai_transition_editing_skill`
-- [ ] Create capability skills
-
-**Deliverables:**
-- `.storyline/skills/*/SKILL.md` + `stages.json`
-- Prompt templates in `prompts/tasks/`
-
-### **Phase 5: Integration & Testing** (Weeks 9-10)
-
-- [ ] End-to-end workflow testing
-- [ ] Performance optimization
-- [ ] Error recovery & fallback strategies
-- [ ] Documentation & examples
-
-**Deliverables:**
-- `README.md` with setup instructions
-- Integration tests
-- Performance benchmarks
-- Example projects
 
 ---
 
@@ -1357,184 +1357,225 @@ pi-video-editing-agent/
 ├── src/
 │   ├── index.ts
 │   ├── orchestrator/
-│   │   ├── orchestrator.ts          # Main Pi agent
-│   │   ├── skillManager.ts          # Skill loading & validation
-│   │   └── executionContext.ts      # Session state
+│   │   ├── orchestrator.ts
+│   │   ├── skillManager.ts
+│   │   └── executionContext.ts
 │   │
 │   ├── skills/
-│   │   ├── skill.ts                 # SkillDefinition interface
-│   │   ├── skillRegistry.ts         # Global skill catalog
-│   │   └── loader.ts                # YAML/JSON loader
+│   │   ├── skill.ts
+│   │   ├── skillRegistry.ts
+│   │   └── loader.ts
 │   │
 │   ├── prompt/
-│   │   ├── promptEngine.ts          # Template rendering
-│   │   ├── variableValidator.ts     # Schema validation
-│   │   └── loader.ts                # Load from prompts/
+│   │   ├── promptEngine.ts
+│   │   ├── variableValidator.ts
+│   │   └── loader.ts
 │   │
 │   ├── subagents/
-│   │   ├── types.ts                 # Subagent interfaces
-│   │   ├── pool.ts                  # Subagent pooling
-│   │   ├── llm_subagent.ts          # LLM wrapper
-│   │   ├── mlx_vlm_subagent.ts      # Vision model
-│   │   ├── mlx_audio_subagent.ts    # TTS model
-│   │   ├── whisper_subagent.ts      # STT model
-│   │   └── timeline_render_subagent.ts  # Remotion-engine render
+│   │   ├── types.ts
+│   │   ├── pool.ts
+│   │   ├── llm_subagent.ts
+│   │   ├── mlx_vlm_cli_subagent.ts    ⭐ CLI-based
+│   │   ├── mlx_audio_cli_subagent.ts  ⭐ CLI-based
+│   │   ├── whisper_cli_subagent.ts    ⭐ CLI-based
+│   │   ├── timeline_render_subagent.ts
+│   │   └── cliExecutor.ts              ⭐ Generic CLI executor
 │   │
 │   ├── executor/
-│   │   ├── chainExecutor.ts         # Sequential @pi-subagents/chain
-│   │   ├── parallelExecutor.ts      # Parallel @pi-subagents/parallel
-│   │   └── conditionalExecutor.ts   # Conditional branching
+│   │   ├── chainExecutor.ts
+│   │   ├── parallelExecutor.ts
+│   │   └── conditionalExecutor.ts
 │   │
 │   ├── timeline/
-│   │   ├── builder.ts               # Stream tree construction
-│   │   ├── converter.ts             # Adapt editing outputs to Remotion
-│   │   └── remotion.config.ts       # Remotion root config
+│   │   ├── builder.ts
+│   │   └── remotion.config.ts
 │   │
 │   ├── storage/
-│   │   ├── sessionStore.ts          # Session persistence
-│   │   ├── assetManager.ts          # Media file management
-│   │   └── artifactStore.ts         # Intermediate outputs
+│   │   ├── sessionStore.ts
+│   │   ├── assetManager.ts
+│   │   └── artifactStore.ts
 │   │
 │   └── config/
-│       ├── config.ts                # Config schema
-│       └── defaults.ts              # Default values
+│       ├── config.ts
+│       └── defaults.ts
 │
-├── prompts/                         # Copied from FireRed
+├── prompts/
 │   ├── system/
 │   ├── skills/
 │   ├── tasks/
 │   └── templates/
 │
-├── .storyline/                      # Local models & skills
-│   ├── models/                      # Quantized MLX models
-│   ├── skills/                      # Skill definitions
-│   └── cache/                       # Generated artifacts
+├── .storyline/
+│   ├── skills/
+│   └── cache/
 │
 ├── examples/
-│   ├── basic_vlog.ts               # Basic workflow
-│   ├── speech_rough_cut.ts         # Speech editing
-│   ├── multi_aspect_render.ts      # Multi-aspect Remotion render
-│   └── parallel_tasks.ts           # Parallel execution
+│   ├── basic_vlog.ts
+│   ├── cli_integration_test.ts  ⭐ Test CLI subagents
+│   └── multi_aspect_render.ts
 │
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── fixtures/
+├── bin/
+│   ├── cli.ts                   # Entry point for CLI orchestration
+│   └── start-services.sh        # Start MLX/Whisper services
 │
 ├── package.json
 ├── tsconfig.json
-├── README.md
-└── PI_PACKAGE_DESIGN.md            # This file
+└── PI_PACKAGE_DESIGN.md
 ```
 
 ---
 
 ## 🚀 Getting Started
 
-### **Installation**
+### **1. Installation**
 
 ```bash
-npm install @nicobailon/pi-subagents mlx-vlm mlx-audio @xenova/transformers @neox/remotion-engine remotion
-npm install --save-dev typescript @types/node
+# Install Node.js dependencies
+npm install @nicobailon/pi-subagents axios
+
+# Install MLX CLI tools
+pip install mlx-vlm mlx-audio openai-whisper
+
+# Install Remotion CLI
+npm install --save-dev remotion @remotion/cli
+
+# Install ffmpeg (for audio duration detection)
+# macOS: brew install ffmpeg
+# Ubuntu: sudo apt-get install ffmpeg
 ```
 
-### **Configuration**
+### **2. Start Services**
+
+```bash
+#!/bin/bash
+# start-services.sh
+
+# Start MLX-VLM server (background)
+mlx-vlm serve --model phi-3-vision-128k-instruct --port 8000 &
+
+# Start MLX-Audio server (optional, if using as service)
+mlx-audio server --port 8001 &
+
+echo "Services started:"
+echo "  MLX-VLM: http://localhost:8000"
+echo "  MLX-Audio: http://localhost:8001"
+```
+
+### **3. Configuration**
 
 ```typescript
 // .env
-MLX_DEVICE=auto
+MLX_VLM_API_URL=http://localhost:8000
+MLX_VLM_MODEL=phi-3-vision-128k-instruct
+MLX_AUDIO_MODEL=Kokoro-82M
 WHISPER_MODEL_SIZE=base
 VOICEOVER_VOICE=en_US_1
 VLOG_OUTPUT_DIR=./outputs
 REMOTION_CACHE_DIR=./.remotion-cache
 ```
 
-### **Basic Example**
+### **4. Basic Example**
 
 ```typescript
-import { Orchestrator } from "./src/orchestrator";
-import { SkillRegistry } from "./src/skills/skillRegistry";
+// examples/basic_vlog.ts
+
+import { Orchestrator } from "../src/orchestrator";
+import { SkillRegistry } from "../src/skills/skillRegistry";
 
 async function main() {
-  // Initialize orchestrator
   const orchestrator = new Orchestrator({
     modelDir: "./.storyline/models",
     promptDir: "./prompts",
     cacheDir: "./.storyline/cache",
+    cliMode: true,  // Use CLI-based subagents
   });
 
-  await orchestrator.initialize();
-
-  // Load skill
   const registry = new SkillRegistry("./storyline/skills");
   const skill = await registry.loadSkill("default_editing_workflow_skill");
 
-  // Execute workflow
   const result = await orchestrator.executeSkill(skill, {
     mediaFiles: ["./videos/travel.mp4"],
     userRequest: "Create a travel vlog with daily mumbling style",
     style: "Daily Mumbling",
     includeVoiceover: true,
     voice: "en_US_1",
-    aspectRatios: ["16x9", "9x16"],  // Multi-aspect render
+    aspectRatios: ["16x9", "9x16"],
   });
 
-  console.log("✅ Vlog generated:", result.outputs);
-  result.outputs.forEach(output => {
-    console.log(`  - ${output.aspect}: ${output.path}`);
+  console.log("✅ Vlog generated:");
+  result.outputs.forEach((output) => {
+    console.log(`  ${output.aspect}: ${output.path}`);
   });
 }
 
 main().catch(console.error);
 ```
 
----
+### **5. CLI Integration Test**
 
-## 🔗 References to FireRed & Remotion Architecture
+```bash
+# Test MLX-VLM
+mlx-vlm serve --model phi-3-vision-128k-instruct --port 8000 &
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"phi-3-vision-128k-instruct","messages":[{"role":"user","content":"test"}]}'
 
-| FireRed Component | Pi Equivalent | Remotion-Engine Role |
-|-------------------|---------------|-------------------|
-| `NodeManager` | `SkillManager` | Stream tree dependency tracking |
-| `LangChain Agent` | `Orchestrator` + `@pi-subagents` | Multi-turn orchestration |
-| `MCP Tools` | `Subagent` types | Capability modules (MLX, Whisper) |
-| `/prompts/tasks/` | `PromptTemplateEngine` | Handlebars rendering |
-| `Skills (SKILL.md)` | `SkillDefinition` interface | Reusable workflow definitions |
-| `ClientContext` | `ExecutionContext` | Session-scoped state |
-| `ArtifactStore` | `AssetManager` | Intermediate outputs |
-| `MoviePy rendering` | **@neox/remotion-engine** | **React-based stream trees → MP4** |
-| `plan_timeline` | `TimelineRenderSubagent` | Build Remotion JSON stream tree |
-| `render_video` | `remotion render CLI` | Invoke Remotion Engine headless |
+# Test MLX-Audio
+mlx-audio tts \
+  --model Kokoro-82M \
+  --text "Welcome to my vlog" \
+  --output test-voice.wav
 
----
+# Test Whisper
+whisper test-audio.wav --model base --output_format json
 
-## 📊 Performance Targets
-
-| Metric | Target |
-|--------|--------|
-| **VLM inference** (per clip) | < 2s (on GPU) |
-| **TTS generation** (per 100 words) | < 5s (on GPU) |
-| **STT transcription** (per minute) | < 10s (base model) |
-| **Timeline building** (100 clips) | < 5s |
-| **Remotion render** (5-min video, 1080p) | < 10 mins (GPU accelerated) |
-| **Full workflow** (5-min video) | < 30 mins (end-to-end) |
-| **Memory footprint** | < 16GB (quantized models + cache) |
+# Test Remotion
+remotion render src/remotion.config.ts Root output.mp4
+```
 
 ---
 
-## 🤝 Contributing
+## 📊 CLI Command Reference
 
-This design bridges FireRed's sophisticated skill system with modern subagent orchestration and Remotion's declarative rendering. Contributions should:
+| Tool | Command | Use Case |
+|------|---------|----------|
+| **mlx-vlm serve** | Start REST API server | Continuous VLM inference |
+| **mlx-vlm predict** | Single inference | Quick image analysis |
+| **mlx-audio tts** | Text-to-speech | Generate voiceovers |
+| **whisper** | Transcribe audio/video | Extract speech & timestamps |
+| **remotion render** | Render video | Build MP4 from stream tree |
 
-1. Maintain compatibility with FireRed's prompt & skill structure
-2. Follow Pi framework conventions for subagent definitions
-3. Ensure Remotion stream tree Zod validation
-4. Include tests for new subagent types
-5. Document prompt templates with variable schemas
-6. Maintain multi-aspect rendering support
+---
+
+## 🔄 Implementation Roadmap
+
+### **Phase 1: Foundation** (Weeks 1-2)
+- [ ] Skill system & orchestration
+- [ ] CLI executor wrapper
+- [ ] Prompt template engine
+
+### **Phase 2: CLI Integration** (Weeks 3-4)
+- [ ] MLX-VLM CLI subagent
+- [ ] MLX-Audio CLI subagent
+- [ ] Whisper CLI subagent
+
+### **Phase 3: Remotion Integration** (Weeks 5-6)
+- [ ] Timeline builder
+- [ ] Stream tree composition
+- [ ] Multi-aspect rendering
+
+### **Phase 4: Skill Implementations** (Weeks 7-8)
+- [ ] Adapt FireRed skills
+- [ ] Test workflows
+
+### **Phase 5: E2E Testing** (Weeks 9-10)
+- [ ] End-to-end tests
+- [ ] Performance optimization
+- [ ] Documentation
 
 ---
 
 ## 📄 License
 
-Aligned with FireRed-OpenStoryline's Apache 2.0 license and lalalic/remotion-engine's terms.
+Apache 2.0 (aligned with FireRed-OpenStoryline)
 
