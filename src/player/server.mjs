@@ -707,10 +707,12 @@ evtSource.onmessage = (e) => {
   }
 };
 
-// ─── Close button — kills the server, returns control to terminal ────────
-document.getElementById("close-btn")?.addEventListener("click", () => {
-  fetch("/api/shutdown", { method: "POST" });
-});
+// ─── Close button / tab close — kills server, returns control to terminal ─
+function shutdown() {
+  navigator.sendBeacon("/api/shutdown", "{}");
+}
+document.getElementById("close-btn")?.addEventListener("click", shutdown);
+window.addEventListener("beforeunload", shutdown);
 
 // ─── Feedback input — sends user feedback to terminal stdout ─────────────
 document.getElementById("feedback-send")?.addEventListener("click", () => {
