@@ -307,7 +307,7 @@ function playScene(idx, seekTime) {
   currentSceneIdx = idx;
   sceneStartTime = performance.now();
   const s = scenesWithMedia[idx];
-  const url = "/" + s.src;
+  const url = s.src && (s.src.startsWith("http://") || s.src.startsWith("https://")) ? s.src : "/" + s.src;
   const isVideo = s.mediaType === "video";
 
   if (isVideo) {
@@ -504,7 +504,7 @@ async function renderThumbnails() {
     var html = "";
     for (var i = 0; i < scenesWithMedia.length; i++) {
       var s = scenesWithMedia[i];
-      var url = "/" + s.src;
+      var url = s.src && (s.src.startsWith("http://") || s.src.startsWith("https://")) ? s.src : "/" + s.src;
       var isVideo = s.mediaType === "video";
       var cls = i === 0 ? "thumb active" : "thumb";
       html += '<div class="' + cls + '" data-index="' + i + '" data-start="' + s.start + '" onclick="seekToScene(' + s.start + ')">';
