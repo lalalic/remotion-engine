@@ -1,5 +1,6 @@
 /**
  * Map stream type — animated route on a static map canvas.
+ * Inspired by qili-ai/www/src/views/studio/remotion/types/map.js.
  *
  * Renders a route between waypoints with an animated marker that
  * travels along the path in sync with the current frame.

@@ -1,5 +1,6 @@
 /**
  * Rhythm stream type — audio playback with loop + beat-synced children.
+ * Ported from qili-ai/www/src/views/studio/remotion/types/rhythm.js.
  *
  * The rhythm stream plays audio in a loop. Children are expected to have
  * their timing pre-computed (by a build step or CLI tool) to align with

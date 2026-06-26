@@ -1,6 +1,6 @@
 /**
  * Frame-accurate CSS keyframe interpolation using Remotion's interpolate().
- * No browser DOM deps.
+ * Ported from qili-ai/www/src/views/studio/keyframes.js — no browser DOM deps.
  *
  * Keyframes are defined as JSON: { "0": { opacity: "0" }, "100": { opacity: "1" } }
  * Bundled presets cover common animate.css animations.

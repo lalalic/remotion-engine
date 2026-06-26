@@ -1,6 +1,6 @@
 /**
  * Pure helpers, no AI, no network, no React.
- * Pure helpers — no AI, no network, no React.
+ * Subset of qili-ai/www/src/views/studio/utils.js with prompt-layer code removed.
  */
 
 export function uid(): string {
@@ -78,7 +78,7 @@ export function walkDown<T extends StreamNode>(
 /**
  * Compute duration of a stream subtree, in seconds.
  *
- * Compute duration of a stream subtree, in seconds.
+ * Mirrors qili-ai utils.getDurationInSeconds without the prompt/template branches.
  *
  *  - rhythm streams use their pre-set durationInSeconds (set by host)
  *  - leaf actions use action.end as default

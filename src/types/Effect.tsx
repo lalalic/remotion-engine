@@ -1,5 +1,6 @@
 /**
  * Effect stream type — wraps children with keyframe-based CSS animation.
+ * Ported from qili-ai/www/src/views/studio/remotion/types/effect.js.
  *
  * Usage in stream tree:
  *   { type: "effect", animation: "fadeIn", children: [{ type: "video", ... }] }
