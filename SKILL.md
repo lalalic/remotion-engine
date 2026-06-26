@@ -1,15 +1,15 @@
 ---
 name: remotion-engine
 description: >-
-  Render-only Remotion engine for marketing/demo videos and app-embedded
-  templates. CLI takes a stream tree JSON (or template+data), renders to MP4,
-  or previews with labeling/chat. No studio, no eval, no AI prompts.
+  Render-only Remotion engine. CLI takes a stream tree JSON (or template+data),
+  renders to MP4, or previews with labeling/chat. No studio, no eval,
+  no AI prompts.
 execute: false
 ---
 
 # @neox/remotion-engine — Skill Index
 
-Use when: rendering marketing/demo videos from stream tree JSON, previewing with scene labeling (`--label`), or agent-assisted editing via chat (`--chat`).
+Use when: rendering a stream tree JSON to MP4, previewing with scene labeling (`--label`), or agent-assisted editing via chat (`--chat`).
 
 ## Quickstart
 
