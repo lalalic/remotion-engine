@@ -31,20 +31,52 @@ const sseClients = new Set();
 let labels = [];
 
 // ─── Parse video.json for scene info ─────────────────────────────────────
+// Supports two JSON formats:
+//   1. Stream tree: root → scene folders (type:"folder") → media children
+//   2. scenes folder: root → "scenes" folder → scene objects with media src
 let scenes = [];
 let totalDuration = 0;
 try {
   const raw = readFileSync(VIDEO_JSON, "utf-8");
   const parsed = JSON.parse(raw);
   const root = parsed.root || parsed;
+
+  // Try format 1: scenes are direct children of root (stream tree)
+  // Root children that are folders with their own children are scenes
+  if (root.children?.length && !root.children.find(c => c.name === "scenes" || c.id === "scenes")) {
+    let offset = 0;
+    scenes = root.children
+      .filter(c => c.type === "folder" || c.children?.length)
+      .filter(c => !c.isBackground)
+      .map(s => {
+        // Find first leaf child with a src (image/video) for playback
+        const leaf = (s.children || []).find(c => c.src && (c.type === "image" || c.type === "video"));
+        const action = leaf?.actions?.[0] || s.actions?.[0] || {};
+        const dur = (action.end || 5) - (action.start || 0);
+        const src = leaf?.src || "";
+        const mediaType = leaf?.type || "unknown";
+        const scene = {
+          name: s.name || s.id || "scene",
+          start: offset,
+          end: offset + dur,
+          duration: dur,
+          src,
+          mediaType,
+        };
+        offset += dur;
+        return scene;
+      });
+    totalDuration = offset;
+  }
+
+  // Try format 2: scenes wrapped in a "scenes" folder
   const scenesFolder = root.children?.find(c => c.name === "scenes" || c.id === "scenes");
-  if (scenesFolder?.children) {
+  if (scenesFolder?.children && scenes.length === 0) {
     let offset = 0;
     scenes = scenesFolder.children.map(s => {
       const child = s.children?.[0] || {};
       const action = child?.actions?.[0];
       const dur = action ? (action.end - action.start) : 5;
-      // Extract the media source path from the child element
       const src = child.src || "";
       const mediaType = child.type || "unknown";
       const scene = {
@@ -52,8 +84,8 @@ try {
         start: offset,
         end: offset + dur,
         duration: dur,
-        src,          // e.g. "vlog/label-preview-.../photos/photo_1_9x16.jpg"
-        mediaType,    // "image" | "video"
+        src,
+        mediaType,
       };
       offset += dur;
       return scene;
@@ -196,8 +228,25 @@ async function loadVideoData() {
     const res = await fetch("/api/video-data");
     const videoJson = await res.json();
     const root = videoJson.root || videoJson;
-    const scenesFolder = root.children?.find(c => c.name === "scenes" || c.id === "scenes");
-    if (scenesFolder?.children) {
+    const children = root.children || [];
+
+    // Try stream tree format: scene folders are direct children of root
+    const sceneFolders = children.filter(c => c.type === "folder" || c.children?.length);
+    // Try scenes folder format: scenes wrapped in a "scenes" folder
+    const scenesFolder = children.find(c => c.name === "scenes" || c.id === "scenes");
+
+    if (sceneFolders.length > 0 && !scenesFolder) {
+      let offset = 0;
+      scenes = sceneFolders.map(s => {
+        const leaf = (s.children || []).find(c => c.src);
+        const action = leaf?.actions?.[0] || s.actions?.[0] || {};
+        const dur = (action.end || 5) - (action.start || 0);
+        const scene = { name: s.name || s.id, start: offset, end: offset + dur };
+        offset += dur;
+        return scene;
+      });
+      totalDuration = offset;
+    } else if (scenesFolder?.children) {
       let offset = 0;
       scenes = scenesFolder.children.map(s => {
         const action = s.children?.[0]?.actions?.[0];
