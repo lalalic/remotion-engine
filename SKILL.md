@@ -2,14 +2,8 @@
 name: remotion-engine
 description: >-
   Render-only Remotion engine. CLI takes a stream tree JSON (or template+data),
-  renders to MP4, or previews with labeling/chat. No studio, no eval,
-  no AI prompts.
-execute: false
+  renders to MP4, or previews with labeling/chat.
 ---
-
-# @neox/remotion-engine — Skill Index
-
-Use when: rendering a stream tree JSON to MP4, previewing with scene labeling (`--label`), or agent-assisted editing via chat (`--chat`).
 
 ## Quickstart
 
@@ -20,6 +14,9 @@ npm install
 
 # Render sample → out/preview.mp4
 npm run render
+
+# Preview
+npm run preview -- sample.json
 
 # Preview with labels (interactive scene labeling)
 npm run preview -- sample.json --label
@@ -151,21 +148,41 @@ Each saved label records:
 }
 ```
 
-### --chat: Agent Chat Panel
+### --chat: Agent Notification Panel
 
 ```bash
 npm run preview -- my-video.json --chat
 npm run preview -- my-video.json --chat --port 3001
 ```
 
-Custom player with a **360px chat sidebar**:
+Custom player with a **360px chat sidebar**. The agent is a **separate process** — it edits the stream tree JSON file directly, then uses the chat to tell the user to reload.
 
-- Left side: video player with controls
-- Right side: chat messages
-- Agent messages stream via SSE at `/api/chat/events`
-- POST messages: `curl -X POST http://localhost:3001/api/chat/send -H 'Content-Type: application/json' -d '{"text":"...","time":2.5}'`
+**Workflow**:
 
-**Workflow**: User watches video, types feedback → agent receives it, edits the stream tree JSON → user reloads to see changes.
+```
+User's browser              Player Server           Agent (separate process)
+    │                            │                        │
+    │── types feedback ───────► POST /api/chat/send ────► │ (agent receives via SSE)
+    │                            │                        │
+    │                            │                        ├── edits sample-subtitle.json
+    │                            │                        │   (change timing, props, etc.)
+    │                            │                        │
+    │◄── SSE "Reload to see ─────┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄◄──── POST /api/chat/send
+    │     new timing"            │                        │    {"text":"done, reload"}
+    │                            │                        │
+    │── reload browser ───────► serves updated JSON ──►  │
+```
+
+**Key insight**: the agent edits the file, the player just reloads. Chat is purely for notifications — the agent tells you "done, reload" and you refresh the page to see the updated stream tree.
+
+Wire up from another terminal:
+
+```bash
+# Agent notifies user after editing the JSON
+curl -X POST http://localhost:3001/api/chat/send \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Agent: adjusted scene 2 subtitle color to orange, reload to see"}'
+```
 
 ### Player API Endpoints
 
@@ -726,9 +743,14 @@ node src/render/cli.mjs preview scenes.json --label
 ### Agent-assisted editing
 
 ```bash
-# Terminal 1: Player with chat
+# Terminal 1: Player with notification panel
 node src/render/cli.mjs preview draft.json --chat --port 3001
-# Terminal 2: Agent listens to SSE, edits JSON based on chat
+
+# Terminal 2: Agent reads user feedback from SSE, edits the JSON file,
+# then POSTs a notification back telling user to reload
+curl -X POST http://localhost:3001/api/chat/send \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"done — reload to see"}'
 ```
 
 ### Multi-aspect social renders
