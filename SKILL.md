@@ -164,19 +164,32 @@ Same scene player as `--label` but **automatically reloads** when the JSON file 
 3. Player detects the file change, re-parses scenes, and restarts playback — **no manual reload**
 
 This is the mode to use for **agent-assisted editing**:
-- Agent edits `sample-subtitle.json` directly (timing, props, captions)
+- Agent edits the JSON file directly (timing, props, captions)
 - Player auto-refreshes within ~500ms
-- You see the changes immediately
+- User sees changes immediately
+
+**Player page has two controls**:
+
+| Control | What it does |
+|---------|-------------|
+| **✕ close button** (top right) | Kills the server process — agent's terminal command exits and agent regains control |
+| **Feedback input** (bottom) | Type feedback (approved? rejected? changes?) and press Send. Feedback is printed to the terminal so the agent sees it |
+
+**Typical agent session**:
 
 ```bash
-# Terminal 1: Player watching for changes
-npm run preview -- draft.json --watch --port 3001
+# Agent starts player
+node src/render/cli.mjs preview draft.json --watch --port 3001
+# → Player opens in browser, agent's terminal blocks waiting
 
-# Terminal 2: Edit the JSON (agent or manually)
-# Player auto-reloads when file is saved
+# Agent edits the JSON file (in another terminal or via tool)
+# Player auto-reloads, user watches
+
+# User clicks ✕ when done → server exits → agent regains terminal
+# Or user types feedback → agent reads it from stdout and continues
 ```
 
-The server watches the file with `fs.watchFile` and pushes reload events via SSE at `/api/events`. No external API calls needed.
+The server watches the file with `fs.watchFile` and pushes reload events via SSE at `/api/events`.
 
 ### Player API Endpoints
 
@@ -736,11 +749,13 @@ node src/render/cli.mjs preview scenes.json --label
 ### Agent-assisted editing with auto-reload
 
 ```bash
-# Terminal 1: Player watching the JSON file
+# Agent starts player, terminal blocks waiting
 node src/render/cli.mjs preview draft.json --watch --port 3001
 
-# Terminal 2: Agent edits the JSON file directly — player auto-reloads
-# No need to notify the player, file watcher handles it
+# Agent edits the JSON file directly — player auto-reloads
+# User watches, types feedback in the bottom input, or clicks ✕ to close
+# When user clicks ✕, server exits, agent regains terminal control
+# User feedback is printed to stdout for the agent to read
 ```
 
 ### Multi-aspect social renders

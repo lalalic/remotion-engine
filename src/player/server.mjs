@@ -206,11 +206,29 @@ function getHtml() {
   #thumb-bar .thumb.labeled { border-color: #4a9eff; }
   #thumb-bar .thumb img, #thumb-bar .thumb video { width: 100%; height: 100%; object-fit: cover; }` : ""}
   ${MODE_WATCH ? `
-  #reload-toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #4a9eff; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 200; }
+  #reload-toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #4a9eff; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 200; }
   #reload-toast.show { opacity: 1; }
-  #watch-indicator { position: fixed; top: 12px; right: 12px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(255,255,255,.4); }
+  #watch-indicator { position: fixed; top: 12px; right: 44px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(255,255,255,.4); }
   #watch-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: #4a9eff; animation: pulse-dot 2s infinite; }
   @keyframes pulse-dot { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+  #close-btn { position: fixed; top: 10px; right: 12px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.4); color: rgba(255,255,255,.6); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: all .15s; z-index: 300; }
+  #close-btn:hover { background: rgba(255,60,60,.5); border-color: rgba(255,60,60,.6); color: #fff; }
+  #feedback-bar { display: flex; gap: 8px; align-items: center; padding: 6px 8px; width: 100%; max-width: 420px; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,.1); }
+  #feedback-input { flex: 1; padding: 8px 12px; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.3); color: #eee; border-radius: 6px; font-size: 13px; outline: none; }
+  #feedback-input:focus { border-color: #4a9eff; }
+  #feedback-input::placeholder { color: rgba(255,255,255,.3); }
+  #feedback-send { padding: 6px 14px; background: #4a9eff; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+  #feedback-send:hover { background: #3a8eef; }
+  ` : ""}
+  ${!MODE_LABEL && MODE_WATCH ? `
+  /* Basic controls when watch mode without label */
+  #controls { display: flex; gap: 8px; align-items: center; padding: 6px 8px; width: 100%; max-width: 420px; flex-shrink: 0; }
+  #controls button { background: #444; color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s; }
+  #controls button:hover { background: #666; }
+  #controls .ctrl-time { font-size: 12px; color: #aaa; font-family: monospace; white-space: nowrap; flex-shrink: 0; }
+  #seek-bar { flex: 1; height: 4px; -webkit-appearance: none; appearance: none; background: #444; border-radius: 2px; outline: none; cursor: pointer; min-width: 0; }
+  #seek-bar::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #4a9eff; border: 2px solid #fff; cursor: pointer; }
+  #seek-bar::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #4a9eff; border: 2px solid #fff; cursor: pointer; }
   ` : ""}
 </style>
 </head>
@@ -223,12 +241,14 @@ function getHtml() {
         <img id="photo-player" style="display:none" />
       </div>
     </div>
-    ${MODE_LABEL ? `
+    ${MODE_LABEL || MODE_WATCH ? `
     <div id="controls">
       <button id="play-btn" title="Play/Pause">⏸</button>
       <input type="range" id="seek-bar" min="0" max="60" value="0" step="0.1" />
       <span class="ctrl-time"><span id="ctrl-current">00:00</span> / <span id="ctrl-total">00:00</span></span>
     </div>
+    ` : ""}
+    ${MODE_LABEL ? `
     <div id="label-bar">
       <div id="label-input-row">
         <input id="label-input" placeholder="Type a label and press Enter…" autocomplete="off" />
@@ -238,9 +258,15 @@ function getHtml() {
       <div id="thumb-bar"></div>
     </div>
     ` : ""}
+    ${!MODE_LABEL && MODE_WATCH ? `<div id="thumb-bar"></div>` : ""}
   </div>
-  ${MODE_WATCH ? `<div id="watch-indicator"><span class="dot"></span>watching</div>
-<div id="reload-toast">🔄 JSON changed — reloading...</div>` : ""}
+  ${MODE_WATCH ? `<button id="close-btn" title="Close player and return to terminal">✕</button>
+  <div id="watch-indicator"><span class="dot"></span>watching</div>
+  <div id="reload-toast">🔄 JSON changed — reloading...</div>
+  <div id="feedback-bar">
+    <input id="feedback-input" placeholder="Feedback for agent (approved? changes?)..." />
+    <button id="feedback-send">Send</button>
+  </div>` : ""}
 
 <script>
 // ─── Load video.json from API ──────────────────────────────────────────
@@ -680,6 +706,31 @@ evtSource.onmessage = (e) => {
     }, 500);
   }
 };
+
+// ─── Close button — kills the server, returns control to terminal ────────
+document.getElementById("close-btn")?.addEventListener("click", () => {
+  fetch("/api/shutdown", { method: "POST" });
+});
+
+// ─── Feedback input — sends user feedback to terminal stdout ─────────────
+document.getElementById("feedback-send")?.addEventListener("click", () => {
+  const input = document.getElementById("feedback-input");
+  const text = input.value.trim();
+  if (!text) return;
+  fetch("/api/feedback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  input.value = "";
+  input.placeholder = "Sent! Feedback for agent...";
+});
+document.getElementById("feedback-input")?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    document.getElementById("feedback-send")?.click();
+  }
+});
 ` : ""}
 </script>
 </body>
@@ -722,6 +773,33 @@ const server = createServer((req, res) => {
         });
         return;
       }
+    }
+
+    // API: Shutdown — kill the server, return control to terminal
+    if (path === "/api/shutdown") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ shutting_down: true }));
+      console.log("\n  🚪 Close requested from browser — shutting down\n");
+      process.exit(0);
+      return;
+    }
+
+    // API: Feedback from user — printed to stdout so agent sees it
+    if (path === "/api/feedback" && req.method === "POST") {
+      let body = "";
+      req.on("data", c => body += c);
+      req.on("end", () => {
+        try {
+          const { text } = JSON.parse(body);
+          console.log(`\n  💬 USER FEEDBACK: ${text}\n`);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ received: true }));
+        } catch (e) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
     }
 
     // API: SSE stream for reload notifications
