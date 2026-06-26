@@ -230,9 +230,16 @@ async function main() {
       const watchFlag = args.watch ? "--watch" : "";
       const portFlag = `--port=${args.port || 3001}`;
       const fileFlag = args.file || join(ROOT, "video.json");
-      const serverArgs = [playerServer, resolve(fileFlag), modeFlags, watchFlag, portFlag].filter(Boolean);
-      console.log(`\n▶ Starting player${args.label ? " (label mode)" : ""}${args.watch ? " (watch mode)" : ""} at http://localhost:${args.port || 3001}\n`);
+      const port = args.port || 3001;
+      const serverArgs = [playerServer, resolve(fileFlag), modeFlags, watchFlag, `--port=${port}`].filter(Boolean);
+      console.log(`\n▶ Starting player${args.label ? " (label mode)" : ""}${args.watch ? " (watch mode)" : ""} at http://localhost:${port}\n`);
       const child = spawn("node", serverArgs, { cwd: ROOT, stdio: "inherit" });
+      // Auto-open browser after short delay
+      setTimeout(() => {
+        try {
+          execSync(`open http://localhost:${port}`, { stdio: "ignore" });
+        } catch {}
+      }, 1000);
       child.on("exit", (code) => process.exit(code ?? 0));
       // Keep running until killed
       process.on("SIGINT", () => { child.kill(); process.exit(0); });
