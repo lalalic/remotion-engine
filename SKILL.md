@@ -1,9 +1,15 @@
+---
+name: remotion-engine
+description: >-
+  Render-only Remotion engine for marketing/demo videos and app-embedded
+  templates. CLI takes a stream tree JSON (or template+data), renders to MP4,
+  or previews with labeling/chat. No studio, no eval, no AI prompts.
+execute: false
+---
+
 # @neox/remotion-engine — Skill Index
 
-> Render-only Remotion engine for marketing videos, demo videos, and app-embedded templates.
-> Stream-typed timeline kernel. No studio, no AI prompts, no eval.
-
-This CLI takes a **stream tree JSON** (or a **template + data**) and renders it to MP4, or previews it in a custom player with labeling and chat.
+Use when: rendering marketing/demo videos from stream tree JSON, previewing with scene labeling (`--label`), or agent-assisted editing via chat (`--chat`).
 
 ## Quickstart
 
@@ -611,7 +617,51 @@ For raw emoji without text animation, create a lightweight component (see Custom
 }
 ```
 
-#### C. Remote Components (load from URL)
+#### C. Route Visualization (map stream type)
+
+There is a built-in `map` stream type for drawing animated routes between waypoints. It renders on an HTML Canvas — no API key needed.
+
+```json
+{
+  "id": "route-1",
+  "type": "map",
+  "waypoints": [
+    {"lat": 37.7749, "lng": -122.4194, "label": "SF"},
+    {"lat": 34.0522, "lng": -118.2437, "label": "LA"},
+    {"lat": 36.1699, "lng": -115.1398, "label": "LV"}
+  ],
+  "routeColor": "#4285F4",
+  "routeWeight": 4,
+  "markerSrc": null,
+  "zoom": 12,
+  "actions": [{ "start": 0, "end": 5 }]
+}
+```
+
+Features:
+- **Animated marker** travels along the path in sync with the current frame
+- **Waypoint markers** with color coding (green=start, yellow=mid, red=end) and labels
+- **Route line** with configurable color and weight
+- **Grid background** for map feel
+- **No external deps** — pure Canvas 2D rendering
+
+Fields:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `waypoints[]` | array | required | `{lat, lng, label?, media?}` |
+| `waypoints[].lat` | number | — | Latitude |
+| `waypoints[].lng` | number | — | Longitude |
+| `waypoints[].label` | string | — | Display label above marker |
+| `waypoints[].media` | string | — | Image/video src for custom marker (not yet implemented) |
+| `routeColor` | string | `#4285F4` | Route line color |
+| `routeWeight` | number | 4 | Route line width |
+| `markerSrc` | string | null | Custom marker image |
+| `zoom` | number | 12 | Map zoom level (affects bounds padding) |
+
+This is a **native stream type** (`type: "map"`), not a component in the registry. It renders a full-canvas overlay. For full Google Maps integration (DirectionsService, satellite tiles), create a custom component instead.
+
+#### D. Remote Components (load from URL)
 
 The `component` stream type's `src` field lets you load a React component from a remote URL at render time:
 
