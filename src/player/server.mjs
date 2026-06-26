@@ -711,7 +711,10 @@ evtSource.onmessage = (e) => {
 // ─── Close button / tab close — kills server, returns control to terminal ─
 document.getElementById("close-btn")?.addEventListener("click", () => {
   fetch("/api/shutdown", { method: "POST", keepalive: true });
-  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#111;color:#666;font-family:sans-serif;font-size:18px">⬡ player closed — return to terminal</div>';
+  // Try to close the tab
+  window.close();
+  // Fallback if window.close() is blocked by browser
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#111;color:#666;font-family:sans-serif;font-size:18px">⬡ player closed — close this tab</div>';
 });
 
 // ─── Feedback input — sends user feedback to terminal stdout ─────────────
