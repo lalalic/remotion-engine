@@ -2,7 +2,7 @@
   "name": "@neox/remotion-engine",
   "version": "0.0.1",
   "private": true,
-  "description": "Render-only Remotion engine extracted from qili-ai/studio. Stream-typed timeline kernel for Intento (lite) and desktop (full).",
+  "description": "Render-only Remotion engine. Stream-typed timeline kernel.",
   "type": "module",
   "main": "./src/lite.entry.tsx",
   "exports": {

@@ -1,26 +1,26 @@
 # @neox/remotion-engine
 
-Render-only Remotion engine. Extracted from `qili-ai/www/src/views/studio/remotion/`, with the AI/prompt layer removed.
+Render-only Remotion engine. Stream-typed timeline kernel.
 
 Two distribution targets:
 
 | Bundle | Entry | Stream types | Target |
 | --- | --- | --- | --- |
-| **lite** | `src/lite.entry.tsx` | `root`, `folder`, `video`, `audio`, `image`, `subtitle`, `component` (host-registered only) | Intento iOS WKWebView |
-| **full** | `src/full.entry.tsx` | lite + `gif`, `lottie`, `rive`, `map`, `slides`, `doc`, `rhythm`, `effect`, JSX-parsed components | Desktop Marketing/Demo skills |
+| **lite** | `src/lite.entry.tsx` | `root`, `folder`, `video`, `audio`, `image`, `subtitle`, `component` (host-registered only) | iOS WKWebView |
+| **full** | `src/full.entry.tsx` | lite + `effect`, `rhythm`, `map`, built-in components, themes, templates | Desktop rendering |
 
 The engine is **render-only**:
 
-- No `prompts.*` fields on streams. AI generation happens host-side; the host pushes pure media URLs / cues / props.
-- No `compose/` providers. The host provides a `Container` component + a `components` registry via React context.
-- No `eval/`, `chatflow/`, `PromptDebugger/`. Stream tree is a pure data structure validated by Zod.
-- Mutations are immer JSON Patches pushed from the host (`apply_patches`).
+- No `prompts.*` fields on streams. Host pushes pure media URLs / cues / props.
+- No `compose/` providers. Host provides a `Container` component + a `components` registry via React context.
+- No `eval/`, `chatflow/`. Stream tree is a pure data structure validated by Zod.
+- Mutations are immer JSON Patches pushed from the host.
 
 ## Layout
 
 ```
 src/
-  schema/        Zod schemas for streams (root/folder/video/audio/image/subtitle/component)
+  schema/        Zod schemas for streams
   types/         React renderers (one per stream type)
   context/       Compose + Audio React contexts
   utils/         Pure helpers (duration math, css<->js, vtt parser, hash, walkDown/Up)
