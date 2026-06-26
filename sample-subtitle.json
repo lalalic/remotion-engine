@@ -1,0 +1,112 @@
+{
+  "id": "root",
+  "type": "root",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "isSeries": true,
+  "transition": "fade",
+  "transitionTime": 0.4,
+  "theme": "cinematic",
+  "stylesheet": ".caption { background: rgba(0,0,0,0.4); padding: 12px 24px; border-radius: 12px; } .caption .word-active { color: #f97316; } .intro { font-size: 72px; font-weight: 900; } .body { font-size: 48px; font-weight: 600; } .karaoke-caption .word-active { color: #00ff88; transform: scale(1.1); }",
+  "children": [
+    {
+      "id": "scene-1",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg1",
+          "type": "image",
+          "src": "https://picsum.photos/seed/sub1/1080/1920",
+          "fit": "cover",
+          "actions": [{ "start": 0, "end": 4 }]
+        },
+        {
+          "id": "title-caption",
+          "type": "subtitle",
+          "src": "Hello from Remotion Engine",
+          "fontSize": 64,
+          "style": "color: #ffffff; text-shadow: 0 4px 20px rgba(0,0,0,0.8); font-weight: bold;",
+          "actions": [{ "start": 0.5, "end": 3.5 }]
+        }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg2",
+          "type": "image",
+          "src": "https://picsum.photos/seed/sub2/1080/1920",
+          "fit": "cover",
+          "actions": [{ "start": 0, "end": 5 }]
+        },
+        {
+          "id": "html-caption",
+          "type": "subtitle",
+          "src": "Supports <span style=\"color:#f97316\">HTML</span> + <span style=\"color:#00ff88\">CSS</span> styling",
+          "fontSize": 48,
+          "actions": [{ "start": 0.5, "end": 4.5 }]
+        }
+      ]
+    },
+    {
+      "id": "scene-3",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg3",
+          "type": "image",
+          "src": "https://picsum.photos/seed/sub3/1080/1920",
+          "fit": "cover",
+          "actions": [{ "start": 0, "end": 6 }]
+        },
+        {
+          "id": "karaoke-caption",
+          "type": "subtitle",
+          "cues": [
+            {
+              "startFrom": 0, "endAt": 6,
+              "text": "Build. Preview. Render. Repeat.",
+              "className": "karaoke karaoke-caption",
+              "words": [
+                { "text": "Build.", "start": 0, "end": 1.5 },
+                { "text": "Preview.", "start": 1.5, "end": 3 },
+                { "text": "Render.", "start": 3, "end": 4.5 },
+                { "text": "Repeat.", "start": 4.5, "end": 6 }
+              ]
+            }
+          ],
+          "fontSize": 56,
+          "actions": [{ "start": 0, "end": 6 }]
+        }
+      ]
+    },
+    {
+      "id": "scene-4",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg4",
+          "type": "image",
+          "src": "https://picsum.photos/seed/sub4/1080/1920",
+          "fit": "cover",
+          "actions": [{ "start": 0, "end": 4 }]
+        },
+        {
+          "id": "styled-vtt",
+          "type": "subtitle",
+          "src": "WEBVTT\n\n00:00:00.500 --> 00:00:02.000\nReady to ship?\n\n00:00:02.500 --> 00:00:04.000\nLet's go 🚀",
+          "fontSize": 52,
+          "style": "color: #00ff88; font-style: italic;",
+          "actions": [{ "start": 0, "end": 4 }]
+        }
+      ]
+    }
+  ]
+}
