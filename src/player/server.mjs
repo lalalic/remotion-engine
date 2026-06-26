@@ -865,9 +865,28 @@ const server = createServer((req, res) => {
     }
 
     // Serve the main HTML page
-    if (path === "/" || path === "/index.html") {
+    if (path === "/player" || path === "/index.html") {
+      if (path === "/index.html") {
+        // Direct navigation → redirect to bootstrap
+        res.writeHead(302, { Location: "/" });
+        res.end();
+        return;
+      }
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(getHtml());
+      return;
+    }
+
+    // Bootstrap page — opens player in script-opened window (so close() works)
+    if (path === "/") {
+      const port = PORT;
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(`<!DOCTYPE html><html><body><script>
+var w = window.open("/player", "_blank", "width=480,height=900,scrollbars=no");
+if (w) { window.close(); } else {
+  document.write('<p style="font-family:sans-serif;padding:40px;text-align:center">Popup blocked. <a href="/player">Click here</a> to open the player.<br><br>Close this tab when done.</p>');
+}
+</script></body></html>`);
       return;
     }
 
