@@ -26,6 +26,7 @@ const MODE_WATCH = process.argv.includes("--watch");
 
 // ─── SSE clients for reload notifications ────────────────────────────────
 const sseClients = new Set();
+let shutdownTimer = null;
 
 // ─── Label store for label mode ───────────────────────────────────────────
 let labels = [];
@@ -708,12 +709,10 @@ evtSource.onmessage = (e) => {
 };
 
 // ─── Close button / tab close — kills server, returns control to terminal ─
-function shutdown() {
-  navigator.sendBeacon("/api/shutdown", "{}");
+document.getElementById("close-btn")?.addEventListener("click", () => {
+  fetch("/api/shutdown", { method: "POST", keepalive: true });
   document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#111;color:#666;font-family:sans-serif;font-size:18px">⬡ player closed — return to terminal</div>';
-}
-document.getElementById("close-btn")?.addEventListener("click", shutdown);
-window.addEventListener("beforeunload", shutdown);
+});
 
 // ─── Feedback input — sends user feedback to terminal stdout ─────────────
 document.getElementById("feedback-send")?.addEventListener("click", () => {
@@ -806,6 +805,8 @@ const server = createServer((req, res) => {
     }
 
     // API: SSE stream for reload notifications
+    // When the browser tab closes, this connection drops → server shuts down
+    // Grace period: wait 3s for reconnection (page reload), then exit
     if (path === "/api/events") {
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
@@ -813,7 +814,19 @@ const server = createServer((req, res) => {
         "Connection": "keep-alive",
       });
       sseClients.add(res);
-      req.on("close", () => sseClients.delete(res));
+      if (shutdownTimer) {
+        clearTimeout(shutdownTimer);
+        shutdownTimer = null;
+      }
+      req.on("close", () => {
+        sseClients.delete(res);
+        if (MODE_WATCH && sseClients.size === 0) {
+          shutdownTimer = setTimeout(() => {
+            console.error("\n  🚪 Browser tab closed — shutting down\n");
+            process.exit(0);
+          }, 3000);
+        }
+      });
       return;
     }
 
