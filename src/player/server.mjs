@@ -711,10 +711,7 @@ evtSource.onmessage = (e) => {
 // ─── Close button / tab close — kills server, returns control to terminal ─
 document.getElementById("close-btn")?.addEventListener("click", () => {
   fetch("/api/shutdown", { method: "POST", keepalive: true });
-  // Try to close the tab
-  window.close();
-  // Fallback if window.close() is blocked by browser
-  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#111;color:#666;font-family:sans-serif;font-size:18px">⬡ player closed — close this tab</div>';
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#111;color:#666;font-family:sans-serif;font-size:18px">⬡ player closed — return to terminal</div>';
 });
 
 // ─── Feedback input — sends user feedback to terminal stdout ─────────────
@@ -865,28 +862,9 @@ const server = createServer((req, res) => {
     }
 
     // Serve the main HTML page
-    if (path === "/player" || path === "/index.html") {
-      if (path === "/index.html") {
-        // Direct navigation → redirect to bootstrap
-        res.writeHead(302, { Location: "/" });
-        res.end();
-        return;
-      }
+    if (path === "/" || path === "/index.html") {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(getHtml());
-      return;
-    }
-
-    // Bootstrap page — opens player in script-opened window (so close() works)
-    if (path === "/") {
-      const port = PORT;
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(`<!DOCTYPE html><html><body><script>
-var w = window.open("/player", "_blank", "width=480,height=900,scrollbars=no");
-if (w) { window.close(); } else {
-  document.write('<p style="font-family:sans-serif;padding:40px;text-align:center">Popup blocked. <a href="/player">Click here</a> to open the player.<br><br>Close this tab when done.</p>');
-}
-</script></body></html>`);
       return;
     }
 
