@@ -4,10 +4,10 @@
  *
  * Modes:
  *   --label   – playback with label input overlay; labels map to media timestamps
- *   --chat     – playback + chat panel; agent makes changes that take effect immediately
+ *   --watch    – auto-reload when the JSON file changes (agent edits file, player refreshes)
  *
  * Usage:
- *   node src/player/server.mjs <video.json> [--label] [--chat] [--port 3001]
+ *   node src/player/server.mjs <video.json> [--label] [--watch] [--port 3001]
  */
 import { createServer } from "node:http";
 import { readFileSync, writeFileSync, watchFile, existsSync, statSync, createReadStream } from "node:fs";
@@ -22,9 +22,9 @@ const PORT = parseInt(process.argv.find(a => a.startsWith("--port="))?.split("="
 const jsonArg = process.argv.find(a => a.endsWith(".json") && !a.startsWith("--"));
 const VIDEO_JSON = jsonArg ? resolve(jsonArg) : join(ROOT, "video.json");
 const MODE_LABEL = process.argv.includes("--label");
-const MODE_CHAT = process.argv.includes("--chat");
+const MODE_WATCH = process.argv.includes("--watch");
 
-// ─── SSE clients for chat mode ──────────────────────────────────────────
+// ─── SSE clients for reload notifications ────────────────────────────────
 const sseClients = new Set();
 
 // ─── Label store for label mode ───────────────────────────────────────────
@@ -96,6 +96,44 @@ try {
   console.error("Warning: could not parse video.json for scene info:", e.message);
 }
 
+// ─── Watch file for changes (--watch mode) ───────────────────────────────
+if (MODE_WATCH) {
+  watchFile(VIDEO_JSON, { interval: 500 }, (curr, prev) => {
+    if (curr.mtimeMs === prev.mtimeMs) return;
+    console.log(`  📁 ${VIDEO_JSON} changed, notifying clients...`);
+    // Re-parse scenes
+    try {
+      const raw = readFileSync(VIDEO_JSON, "utf-8");
+      const parsed = JSON.parse(raw);
+      const root = parsed.root || parsed;
+      scenes = [];
+      totalDuration = 0;
+      if (root.children?.length && !root.children.find(c => c.name === "scenes" || c.id === "scenes")) {
+        let offset = 0;
+        scenes = root.children
+          .filter(c => c.type === "folder" || c.children?.length)
+          .filter(c => !c.isBackground)
+          .map(s => {
+            const leaf = (s.children || []).find(c => c.src && (c.type === "image" || c.type === "video"));
+            const action = leaf?.actions?.[0] || s.actions?.[0] || {};
+            const dur = (action.end || 5) - (action.start || 0);
+            const src = leaf?.src || "";
+            const mediaType = leaf?.type || "unknown";
+            const scene = { name: s.name || s.id || "scene", start: offset, end: offset + dur, duration: dur, src, mediaType };
+            offset += dur;
+            return scene;
+          });
+        totalDuration = offset;
+      }
+      for (const client of sseClients) {
+        client.write("data: " + JSON.stringify({ type: "reload", scenes, totalDuration }) + "\n\n");
+      }
+    } catch (e) {
+      console.error("  ⚠️  Failed to re-parse after change:", e.message);
+    }
+  });
+}
+
 // ─── MIME types ──────────────────────────────────────────────────────────
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -126,13 +164,14 @@ function resolveAsset(urlPath) {
 // ─── HTML page ───────────────────────────────────────────────────────────
 function getHtml() {
   const hasLabel = MODE_LABEL ? "true" : "false";
-  const hasChat = MODE_CHAT ? "true" : "false";
+  const hasWatch = MODE_WATCH ? "true" : "false";
+  const title = MODE_LABEL ? " — Label" : MODE_WATCH ? " — Watch" : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Remotion Player${MODE_LABEL ? " — Label" : ""}${MODE_CHAT ? " — Chat" : ""}</title>
+<title>Remotion Player${title}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #111; color: #eee; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; height: 100vh; overflow: hidden; }
@@ -166,19 +205,12 @@ function getHtml() {
   #thumb-bar .thumb.active { border-color: #fff; opacity: 1; }
   #thumb-bar .thumb.labeled { border-color: #4a9eff; }
   #thumb-bar .thumb img, #thumb-bar .thumb video { width: 100%; height: 100%; object-fit: cover; }` : ""}
-  ${MODE_CHAT ? `
-  #chat-panel { width: 360px; display: flex; flex-direction: column; border-left: 1px solid #333; background: #1a1a1a; }
-  #chat-header { padding: 12px 16px; border-bottom: 1px solid #333; font-size: 13px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-  #chat-messages { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
-  .chat-msg { padding: 8px 12px; border-radius: 8px; max-width: 85%; font-size: 14px; line-height: 1.4; }
-  .chat-msg.agent { align-self: flex-start; background: #2a2a4a; color: #aac; }
-  .chat-msg.user { align-self: flex-end; background: #4a9eff; color: #fff; }
-  .chat-msg .time { font-size: 10px; color: rgba(255,255,255,.5); margin-top: 4px; }
-  .chat-msg.agent .time { color: rgba(170,170,204,.6); }
-  #chat-input-area { display: flex; padding: 8px; border-top: 1px solid #333; gap: 8px; }
-  #chat-input { flex: 1; padding: 8px 12px; border: 1px solid #444; background: #222; color: #eee; border-radius: 4px; outline: none; }
-  #chat-input:focus { border-color: #4a9eff; }
-  #chat-send { padding: 8px 16px; background: #4a9eff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+  ${MODE_WATCH ? `
+  #reload-toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #4a9eff; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 200; }
+  #reload-toast.show { opacity: 1; }
+  #watch-indicator { position: fixed; top: 12px; right: 12px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(255,255,255,.4); }
+  #watch-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: #4a9eff; animation: pulse-dot 2s infinite; }
+  @keyframes pulse-dot { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
   ` : ""}
 </style>
 </head>
@@ -207,16 +239,8 @@ function getHtml() {
     </div>
     ` : ""}
   </div>
-  ${MODE_CHAT ? `
-  <div id="chat-panel">
-    <div id="chat-header">💬 Agent Chat</div>
-    <div id="chat-messages"></div>
-    <div id="chat-input-area">
-      <input id="chat-input" placeholder="Type a message…" />
-      <button id="chat-send">Send</button>
-    </div>
-  </div>
-  ` : ""}
+  ${MODE_WATCH ? `<div id="watch-indicator"><span class="dot"></span>watching</div>
+<div id="reload-toast">🔄 JSON changed — reloading...</div>` : ""}
 
 <script>
 // ─── Load video.json from API ──────────────────────────────────────────
@@ -630,53 +654,32 @@ document.getElementById("label-input")?.addEventListener("keydown", async (e) =>
 });
 ` : ""}
 
-${MODE_CHAT ? `
-// ─── Chat Mode ───────────────────────────────────────────────────────────
-const chatMessages = document.getElementById("chat-messages");
-const chatInput = document.getElementById("chat-input");
-const chatSend = document.getElementById("chat-send");
-const chatPanel = document.getElementById("chat-panel");
-
-// Connect to SSE for agent messages
-const evtSource = new EventSource("/api/chat/events");
+${MODE_WATCH ? `
+// ─── Watch Mode — auto-reload on JSON file change ────────────────────────
+const toast = document.getElementById("reload-toast");
+const evtSource = new EventSource("/api/events");
 evtSource.onmessage = (e) => {
   const msg = JSON.parse(e.data);
-  addChatMessage(msg.text, "agent");
-};
-
-// Send user message
-async function sendChatMessage(text) {
-  addChatMessage(text, "user");
-  try {
-    await fetch("/api/chat/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, time: player?.currentTime || 0 }),
-    });
-  } catch(e) { console.error("Chat send error:", e); }
-}
-
-chatSend?.addEventListener("click", () => {
-  const text = chatInput.value.trim();
-  if (!text) return;
-  sendChatMessage(text);
-  chatInput.value = "";
-});
-
-chatInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    chatSend?.click();
+  if (msg.type === "reload") {
+    toast.classList.add("show");
+    setTimeout(async () => {
+      // Re-fetch scenes
+      const res = await fetch("/api/scenes");
+      scenesWithMedia = await res.json();
+      if (scenesWithMedia.length) {
+        totalDuration = scenesWithMedia[scenesWithMedia.length - 1].end;
+        if (seekBar) seekBar.max = totalDuration;
+        document.getElementById("ctrl-total").textContent = formatTime(totalDuration);
+        // Also update scenes for label references
+        scenes = scenesWithMedia.map(s => ({ name: s.name, start: s.start, end: s.end, src: s.src, mediaType: s.mediaType }));
+        // Re-render thumbnails and restart playback
+        renderThumbnails();
+        stopPlayback();
+      }
+      toast.classList.remove("show");
+    }, 500);
   }
-});
-
-function addChatMessage(text, role) {
-  const div = document.createElement("div");
-  div.className = "chat-msg " + role;
-  div.innerHTML = text + '<div class="time">' + new Date().toLocaleTimeString() + '</div>';
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+};
 ` : ""}
 </script>
 </body>
@@ -721,8 +724,8 @@ const server = createServer((req, res) => {
       }
     }
 
-    // API: Chat SSE stream
-    if (path === "/api/chat/events") {
+    // API: SSE stream for reload notifications
+    if (path === "/api/events") {
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
@@ -730,26 +733,6 @@ const server = createServer((req, res) => {
       });
       sseClients.add(res);
       req.on("close", () => sseClients.delete(res));
-      return;
-    }
-
-    // API: Receive agent message (from external process)
-    if (path === "/api/chat/send" && req.method === "POST") {
-      let body = "";
-      req.on("data", c => body += c);
-      req.on("end", () => {
-        try {
-          const msg = JSON.parse(body);
-          for (const client of sseClients) {
-            client.write("data: " + JSON.stringify(msg) + "\n\n");
-          }
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ sent: true }));
-        } catch (e) {
-          res.writeHead(500, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: e.message }));
-        }
-      });
       return;
     }
 
@@ -779,7 +762,7 @@ const server = createServer((req, res) => {
       res.end(JSON.stringify({
         scenes,
         totalDuration,
-        mode: { label: MODE_LABEL, chat: MODE_CHAT },
+        mode: { label: MODE_LABEL, watch: MODE_WATCH },
       }));
       return;
     }
@@ -837,10 +820,10 @@ const server = createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  const mode = MODE_LABEL ? " --label" : MODE_CHAT ? " --chat" : "";
+  const mode = MODE_LABEL ? " --label" : MODE_WATCH ? " --watch" : "";
   console.log(`\n🎬 Remotion Player${mode} at http://localhost:${PORT}`);
   console.log(`   JSON: ${VIDEO_JSON}`);
-  if (MODE_LABEL) console.log(`   Labels will be saved to ${dirname(VIDEO_JSON)}/labels.json`);
-  if (MODE_CHAT) console.log(`   Agent can POST to http://localhost:${PORT}/api/chat/send`);
+  if (MODE_LABEL) console.log(`   Labels: ${dirname(VIDEO_JSON)}/labels.json`);
+  if (MODE_WATCH) console.log(`   Watching ${VIDEO_JSON} for changes — edit the file and player auto-reloads`);
   console.log("");
 });

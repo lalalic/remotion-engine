@@ -22,7 +22,7 @@ npm run preview -- sample.json
 npm run preview -- sample.json --label
 
 # Preview with chat (agent-assisted editing)
-npm run preview -- sample.json --chat
+npm run preview -- sample.json --watch
 ```
 
 ## Stream Tree JSON — The Input
@@ -93,7 +93,7 @@ npm run templates
 | `templates` | List all available templates |
 | `preview <file.json>` | Open Remotion Studio for visual debugging |
 | `preview <file.json> --label` | Custom player: interactive scene labeling |
-| `preview <file.json> --chat` | Custom player: chat panel for agent interaction |
+| `preview <file.json> --watch` | Custom player: auto-reloads when JSON file changes |
 
 ### Options
 
@@ -106,7 +106,7 @@ npm run templates
 | `--verbose` | boolean | `false` | Show every progress frame (default: compact, every 50th) |
 | `--force-new` | boolean | `false` | Force new Studio instance |
 | `--label` | boolean | `false` | Player mode: scene labeling |
-| `--chat` | boolean | `false` | Player mode: chat panel |
+| `--watch` | boolean | `false` | Player mode: auto-reload on JSON file change |
 | `--port` | number | `3001` | Player server port |
 
 ---
@@ -148,41 +148,35 @@ Each saved label records:
 }
 ```
 
-### --chat: Agent Notification Panel
+### --watch: Auto-Reload on JSON Change
 
 ```bash
-npm run preview -- my-video.json --chat
-npm run preview -- my-video.json --chat --port 3001
+npm run preview -- my-video.json --watch
+npm run preview -- my-video.json --watch --port 3001
 ```
 
-Custom player with a **360px chat sidebar**. The agent is a **separate process** — it edits the stream tree JSON file directly, then uses the chat to tell the user to reload.
+Same scene player as `--label` but **automatically reloads** when the JSON file is edited.
 
 **Workflow**:
 
-```
-User's browser              Player Server           Agent (separate process)
-    │                            │                        │
-    │── types feedback ───────► POST /api/chat/send ────► │ (agent receives via SSE)
-    │                            │                        │
-    │                            │                        ├── edits sample-subtitle.json
-    │                            │                        │   (change timing, props, etc.)
-    │                            │                        │
-    │◄── SSE "Reload to see ─────┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄◄──── POST /api/chat/send
-    │     new timing"            │                        │    {"text":"done, reload"}
-    │                            │                        │
-    │── reload browser ───────► serves updated JSON ──►  │
-```
+1. Start the player
+2. Edit the JSON file in your editor (change text, timing, colors, etc.)
+3. Player detects the file change, re-parses scenes, and restarts playback — **no manual reload**
 
-**Key insight**: the agent edits the file, the player just reloads. Chat is purely for notifications — the agent tells you "done, reload" and you refresh the page to see the updated stream tree.
-
-Wire up from another terminal:
+This is the mode to use for **agent-assisted editing**:
+- Agent edits `sample-subtitle.json` directly (timing, props, captions)
+- Player auto-refreshes within ~500ms
+- You see the changes immediately
 
 ```bash
-# Agent notifies user after editing the JSON
-curl -X POST http://localhost:3001/api/chat/send \
-  -H 'Content-Type: application/json' \
-  -d '{"text":"Agent: adjusted scene 2 subtitle color to orange, reload to see"}'
+# Terminal 1: Player watching for changes
+npm run preview -- draft.json --watch --port 3001
+
+# Terminal 2: Edit the JSON (agent or manually)
+# Player auto-reloads when file is saved
 ```
+
+The server watches the file with `fs.watchFile` and pushes reload events via SSE at `/api/events`. No external API calls needed.
 
 ### Player API Endpoints
 
@@ -193,8 +187,7 @@ curl -X POST http://localhost:3001/api/chat/send \
 | `/api/video-info` | GET | Scene info + mode flags |
 | `/api/labels` | GET | Saved labels array |
 | `/api/labels` | POST | Save labels `{labels, scenes}` |
-| `/api/chat/events` | GET | SSE stream for agent messages |
-| `/api/chat/send` | POST | Broadcast a message `{text, time}` to all SSE clients |
+| `/api/events` | GET | SSE stream for reload notifications (only in `--watch` mode) |
 
 ---
 
@@ -740,17 +733,14 @@ node src/render/cli.mjs preview scenes.json --label
 # 3. Labels auto-save to labels.json — use to pick best scenes
 ```
 
-### Agent-assisted editing
+### Agent-assisted editing with auto-reload
 
 ```bash
-# Terminal 1: Player with notification panel
-node src/render/cli.mjs preview draft.json --chat --port 3001
+# Terminal 1: Player watching the JSON file
+node src/render/cli.mjs preview draft.json --watch --port 3001
 
-# Terminal 2: Agent reads user feedback from SSE, edits the JSON file,
-# then POSTs a notification back telling user to reload
-curl -X POST http://localhost:3001/api/chat/send \
-  -H 'Content-Type: application/json' \
-  -d '{"text":"done — reload to see"}'
+# Terminal 2: Agent edits the JSON file directly — player auto-reloads
+# No need to notify the player, file watcher handles it
 ```
 
 ### Multi-aspect social renders
