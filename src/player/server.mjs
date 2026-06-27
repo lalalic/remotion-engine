@@ -181,38 +181,44 @@ function getHtml() {
 <title>Remotion Player${title}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body, #root { width: 100%; height: 100%; overflow: hidden; background: #111; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; }
-  #player-wrap { flex: 1; min-height: 0; position: relative; }
-  #root { width: 100%; height: 100%; }
-  ${MODE_WATCH ? `
-  #reload-toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #4a9eff; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 200; }
-  #reload-toast.show { opacity: 1; }
-  #watch-indicator { position: fixed; top: 12px; right: 44px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(255,255,255,.4); z-index: 100; }
-  #watch-indicator .dot { width: 6px; height: 6px; border-radius: 50%; background: #4a9eff; animation: pulse-dot 2s infinite; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; }
+  #header { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 500px; padding: 8px 12px; flex-shrink: 0; }
+  #header-title { font-size: 12px; color: rgba(255,255,255,.3); font-weight: 500; letter-spacing: .5px; }
+  #header-actions { display: flex; gap: 8px; align-items: center; }
+  #watch-indicator { display: flex; align-items: center; gap: 5px; font-size: 10px; color: rgba(255,255,255,.3); }
+  #watch-indicator .dot { width: 5px; height: 5px; border-radius: 50%; background: #4a9eff; animation: pulse-dot 2s infinite; }
   @keyframes pulse-dot { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
-  #close-btn { position: fixed; top: 10px; right: 12px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.4); color: rgba(255,255,255,.6); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: all .15s; z-index: 300; }
-  #close-btn:hover { background: rgba(255,60,60,.5); border-color: rgba(255,60,60,.6); color: #fff; }
-  #bottom-bar { display: flex; gap: 8px; align-items: center; padding: 8px; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,.1); }
-  #edit-input { flex: 1; padding: 8px 12px; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.3); color: #eee; border-radius: 6px; font-size: 13px; outline: none; }
-  #edit-input:focus { border-color: #4a9eff; }
-  #edit-input::placeholder { color: rgba(255,255,255,.3); }
-  #edit-btn { padding: 6px 14px; background: #4a9eff; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  #close-btn { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.3); color: rgba(255,255,255,.4); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  #close-btn:hover { background: rgba(255,60,60,.4); border-color: rgba(255,60,60,.5); color: #fff; }
+  #player-frame { flex: 1; width: 100%; max-width: 480px; min-height: 0; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); background: #000; box-shadow: 0 4px 40px rgba(0,0,0,.6); margin: 0 12px; }
+  #root { width: 100%; height: 100%; }
+  #reload-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(74,158,255,.9); color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 200; backdrop-filter: blur(8px); }
+  #reload-toast.show { opacity: 1; }
+  #bottom-bar { display: flex; gap: 8px; align-items: center; width: 100%; max-width: 500px; padding: 10px 12px; flex-shrink: 0; }
+  #edit-input { flex: 1; padding: 10px 14px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: #eee; border-radius: 10px; font-size: 13px; outline: none; transition: border-color .15s; }
+  #edit-input:focus { border-color: rgba(74,158,255,.5); }
+  #edit-input::placeholder { color: rgba(255,255,255,.25); }
+  #edit-btn { padding: 8px 18px; background: #4a9eff; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background .15s; }
   #edit-btn:hover { background: #3a8eef; }
-  #edit-status { font-size: 11px; color: rgba(255,255,255,.4); padding: 2px 4px; flex-shrink: 0; min-width: 60px; text-align: right; }
-  #edit-btn:disabled { opacity: 0.5; cursor: wait; }
-  ` : ""}
+  #edit-status { font-size: 11px; color: rgba(255,255,255,.35); padding: 2px 6px; flex-shrink: 0; min-width: 70px; text-align: right; }
+  #edit-btn:disabled { opacity: 0.4; cursor: wait; }
 </style>
 </head>
 <body>
-<div id="player-wrap">
+${MODE_WATCH ? `<div id="header">
+  <span id="header-title">remotion-engine</span>
+  <div id="header-actions">
+    <div id="watch-indicator"><span class="dot"></span>watching</div>
+    <button id="close-btn" title="Close player and return to terminal">✕</button>
+  </div>
+</div>` : ""}
+<div id="player-frame">
   <div id="root"></div>
-  ${MODE_WATCH ? `<button id="close-btn" title="Close player and return to terminal">✕</button>
-  <div id="watch-indicator"><span class="dot"></span>watching</div>
-  <div id="reload-toast">🔄 JSON changed — reloading...</div>` : ""}
 </div>
+<div id="reload-toast">🔄 JSON changed — reloading...</div>
 ${MODE_WATCH ? `<div id="bottom-bar">
-  <input id="edit-input" placeholder="What should change? e.g. make text bigger" />
+  <input id="edit-input" placeholder="What should change? e.g. make text bigger, change color, speed up scene 2" />
   <button id="edit-btn">Apply ✨</button>
   <span id="edit-status"></span>
 </div>` : ""}
@@ -230,7 +236,7 @@ evtSource.onmessage = (e) => {
 // ─── Close button ─────────────────────────────────────────────────────
 document.getElementById("close-btn")?.addEventListener("click", () => {
   navigator.sendBeacon("/api/shutdown", "{}");
-  document.body.innerHTML = "<div style='display:flex;align-items:center;justify-content:center;height:100vh;background:#111;color:#666;font-family:sans-serif;font-size:18px'>\u2B61 player closed — return to terminal</div>";
+  document.body.innerHTML = "<div style='display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:#555;font-family:sans-serif;font-size:16px'>\u2B61 player closed \u2014 return to terminal</div>";
 });
 
 // ─── Edit input ───────────────────────────────────────────────────────
