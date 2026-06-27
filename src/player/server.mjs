@@ -172,7 +172,7 @@ function resolveAsset(urlPath) {
 function getHtml() {
   const hasLabel = MODE_LABEL ? "true" : "false";
   const hasWatch = MODE_EDIT ? "true" : "false";
-  const title = MODE_LABEL ? " — Label" : MODE_EDIT ? " — Watch" : "";
+  const title = MODE_LABEL ? " — Label" : MODE_EDIT ? " — Edit" : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
