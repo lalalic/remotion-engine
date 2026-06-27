@@ -9,6 +9,7 @@
  * Usage:
  *   node src/player/server.mjs <video.json> [--label] [--watch] [--port 3001]
  */
+import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { readFileSync, writeFileSync, watchFile, existsSync, statSync, createReadStream } from "node:fs";
 import { resolve, dirname, join } from "node:path";
@@ -30,6 +31,9 @@ let shutdownTimer = null;
 
 // ─── Label store for label mode ───────────────────────────────────────────
 let labels = [];
+
+// ─── Edit history for context ─────────────────────────────────────────────
+let editHistory = [];
 
 // ─── Parse video.json for scene info ─────────────────────────────────────
 // Supports two JSON formats:
@@ -214,12 +218,14 @@ function getHtml() {
   @keyframes pulse-dot { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
   #close-btn { position: fixed; top: 10px; right: 12px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.4); color: rgba(255,255,255,.6); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: all .15s; z-index: 300; }
   #close-btn:hover { background: rgba(255,60,60,.5); border-color: rgba(255,60,60,.6); color: #fff; }
-  #feedback-bar { display: flex; gap: 8px; align-items: center; padding: 6px 8px; width: 100%; max-width: 420px; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,.1); }
-  #feedback-input { flex: 1; padding: 8px 12px; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.3); color: #eee; border-radius: 6px; font-size: 13px; outline: none; }
-  #feedback-input:focus { border-color: #4a9eff; }
-  #feedback-input::placeholder { color: rgba(255,255,255,.3); }
-  #feedback-send { padding: 6px 14px; background: #4a9eff; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
-  #feedback-send:hover { background: #3a8eef; }
+  #edit-bar { display: flex; gap: 8px; align-items: center; padding: 6px 8px; width: 100%; max-width: 420px; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,.1); }
+  #edit-input { flex: 1; padding: 8px 12px; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.3); color: #eee; border-radius: 6px; font-size: 13px; outline: none; }
+  #edit-input:focus { border-color: #4a9eff; }
+  #edit-input::placeholder { color: rgba(255,255,255,.3); }
+  #edit-btn { padding: 6px 14px; background: #4a9eff; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  #edit-btn:hover { background: #3a8eef; }
+  #edit-status { font-size: 11px; color: rgba(255,255,255,.4); padding: 2px 4px; flex-shrink: 0; min-width: 60px; text-align: right; }
+  #edit-btn:disabled { opacity: 0.5; cursor: wait; }
   ` : ""}
   ${!MODE_LABEL && MODE_WATCH ? `
   /* Basic controls when watch mode without label */
@@ -264,9 +270,10 @@ function getHtml() {
   ${MODE_WATCH ? `<button id="close-btn" title="Close player and return to terminal">✕</button>
   <div id="watch-indicator"><span class="dot"></span>watching</div>
   <div id="reload-toast">🔄 JSON changed — reloading...</div>
-  <div id="feedback-bar">
-    <input id="feedback-input" placeholder="Feedback for agent (approved? changes?)..." />
-    <button id="feedback-send">Send</button>
+  <div id="edit-bar">
+    <input id="edit-input" placeholder="What should change? e.g. make scene 2 text bigger" />
+    <button id="edit-btn">Apply ✨</button>
+    <span id="edit-status"></span>
   </div>` : ""}
 
 <script>
@@ -714,23 +721,43 @@ document.getElementById("close-btn")?.addEventListener("click", () => {
   document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#111;color:#666;font-family:sans-serif;font-size:18px">⬡ player closed — return to terminal</div>';
 });
 
-// ─── Feedback input — sends user feedback to terminal stdout ─────────────
-document.getElementById("feedback-send")?.addEventListener("click", () => {
-  const input = document.getElementById("feedback-input");
-  const text = input.value.trim();
+// ─── Edit input — calls pi to edit JSON, player auto-reloads ──────────────
+const editInput = document.getElementById("edit-input");
+const editBtn = document.getElementById("edit-btn");
+const editStatus = document.getElementById("edit-status");
+
+async function applyEdit() {
+  const text = editInput.value.trim();
   if (!text) return;
-  fetch("/api/feedback", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
-  });
-  input.value = "";
-  input.placeholder = "Sent! Feedback for agent...";
-});
-document.getElementById("feedback-input")?.addEventListener("keydown", (e) => {
+  editBtn.disabled = true;
+  editStatus.textContent = "⏳ editing...";
+  editInput.value = "";
+  try {
+    const res = await fetch("/api/edit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      editStatus.textContent = "✅ done";
+    } else {
+      editStatus.textContent = "❌ " + (data.error || "failed");
+      editInput.value = text; // put back for retry
+    }
+  } catch (e) {
+    editStatus.textContent = "❌ error";
+    editInput.value = text;
+  }
+  editBtn.disabled = false;
+  setTimeout(() => { if (editStatus.textContent !== "⏳ editing...") editStatus.textContent = ""; }, 3000);
+}
+
+editBtn?.addEventListener("click", applyEdit);
+editInput?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
-    document.getElementById("feedback-send")?.click();
+    applyEdit();
   }
 });
 ` : ""}
@@ -801,6 +828,51 @@ const server = createServer((req, res) => {
           res.end(JSON.stringify({ received: true }));
         } catch (e) {
           res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
+    }
+
+    // API: Edit — call pi one-shot to edit the JSON, player auto-reloads
+    if (path === "/api/edit" && req.method === "POST") {
+      let body = "";
+      req.on("data", c => body += c);
+      req.on("end", () => {
+        try {
+          const { text } = JSON.parse(body);
+          if (!text) { res.writeHead(400); res.end(JSON.stringify({ error: "empty text" })); return; }
+
+          editHistory.push(text);
+          const historyStr = editHistory.length > 1
+            ? "\nPrevious edits on this file (in order):\n" + editHistory.slice(0, -1).map((e, i) => `${i+1}. ${e}`).join("\n") + "\n"
+            : "";
+
+          const prompt = `You are editing ${VIDEO_JSON.split("/").pop()}, a Remotion stream tree JSON.${historyStr}\nNow: ${text}`;
+
+          console.log(`  🤖 pi edit: ${text}`);
+          const child = spawn("pi", ["-p", prompt], {
+            cwd: ROOT,
+            stdio: ["ignore", "pipe", "pipe"],
+          });
+
+          let output = "";
+          child.stdout.on("data", d => output += d);
+          child.stderr.on("data", d => output += d);
+
+          child.on("exit", (code) => {
+            if (code === 0) {
+              console.log(`  ✅ pi edit complete`);
+              res.writeHead(200, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ done: true, output: output.trim() }));
+            } else {
+              console.error(`  ❌ pi edit failed (exit ${code}): ${output.trim()}`);
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: `pi exited with code ${code}`, output: output.trim() }));
+            }
+          });
+        } catch (e) {
+          res.writeHead(500, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: e.message }));
         }
       });
