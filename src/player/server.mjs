@@ -786,14 +786,17 @@ const server = createServer((req, res) => {
       return;
     }
 
-    // API: Feedback from user — printed to stdout so agent sees it
+    // API: Feedback from user — printed to stdout AND saved to feedback.txt
+    // Agent can read feedback.txt or tail the log
     if (path === "/api/feedback" && req.method === "POST") {
       let body = "";
       req.on("data", c => body += c);
       req.on("end", () => {
         try {
           const { text } = JSON.parse(body);
+          const line = `[${new Date().toISOString()}] ${text}`;
           console.log(`\n  💬 USER FEEDBACK: ${text}\n`);
+          try { writeFileSync(join(dirname(VIDEO_JSON), "feedback.txt"), line + "\n", { flag: "a" }); } catch {}
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ received: true }));
         } catch (e) {

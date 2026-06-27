@@ -746,17 +746,61 @@ node src/render/cli.mjs preview scenes.json --label
 # 3. Labels auto-save to labels.json — use to pick best scenes
 ```
 
-### Agent-assisted editing with auto-reload
+### Agent-assisted editing session (pi / Codex CLI / Claude Code / Copilot CLI)
+
+This is the main pattern for using `--watch` with an AI coding agent.
+
+The agent runs the player in the **background**, asks you for feedback via chat,
+edits the JSON, and the player auto-reloads.
 
 ```bash
-# Agent starts player, terminal blocks waiting
-node src/render/cli.mjs preview draft.json --watch --port 3001
+# ── Agent does: ───────────────────────────────────────────────────────
 
-# Agent edits the JSON file directly — player auto-reloads
-# User watches, types feedback in the bottom input, or clicks ✕ to close
-# When user clicks ✕, server exits, agent regains terminal control
-# User feedback is printed to stdout for the agent to read
+cd remotion-engine
+
+# Start player in background, log to file (terminal stays free)
+nohup node src/render/cli.mjs preview draft.json --watch --port 3001 \
+  > /tmp/player-draft.log 2>&1 &
+
+# Browser auto-opens to http://localhost:3001
+# You watch the video
+
+# Agent asks: "What do you think?"
+# You type feedback in the agent's chat (not the browser)
+
+# Agent edits the JSON based on your feedback
+# Player auto-reloads within ~500ms
+
+# Loop: ask → edit → watch → repeat
+
+# When done: agent kills the player
+kill %1
+
+# ── Or if user clicks ✕ in browser: ──────────────────────────────────
+# Server exits automatically → agent notices and continues
 ```
+
+**Two feedback channels**:
+
+| Channel | How | Read by agent |
+|---------|-----|---------------|
+| Agent chat | Type in pi/Codex/Claude CLI | Agent reads your message directly |
+| Browser feedback input | Type in the browser bottom input | Written to `feedback.txt` next to the JSON, and printed to `/tmp/player-draft.log` |
+
+**Agent reads browser feedback**:
+
+```bash
+# Agent watches the log for user feedback
+# Player is already running in background, this is a separate command:
+tail -f /tmp/player-draft.log | grep --line-buffered "USER FEEDBACK"
+```
+
+**When using pi specifically**, the player can be started with:
+```
+node src/render/cli.mjs preview <file> --watch --port 3001 &
+```
+pi will print the URL and continue working. Edit the JSON, player auto-reloads.
+The user clicks ✕ when done → server exits → pi's background task completes cleanly.
 
 ### Multi-aspect social renders
 
