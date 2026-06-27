@@ -12,8 +12,10 @@ function PlayerApp() {
   const [ready, setReady] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [data, setData] = React.useState<any>(null);
+  const [refreshKey, setRefreshKey] = React.useState(0);
 
-  React.useEffect(() => {
+  const loadData = React.useCallback(() => {
+    setReady(false);
     fetch("/api/video-data")
       .then((r) => r.json())
       .then((json) => {
@@ -23,6 +25,19 @@ function PlayerApp() {
       })
       .catch((e) => setError(e.message));
   }, []);
+
+  React.useEffect(() => {
+    loadData();
+    // Listen for in-place refresh events (no page reload)
+    const handler = () => { setRefreshKey(k => k + 1); };
+    window.addEventListener("refresh-player", handler);
+    return () => window.removeEventListener("refresh-player", handler);
+  }, [loadData]);
+
+  // Re-fetch data when refresh key changes
+  React.useEffect(() => {
+    if (refreshKey > 0) loadData();
+  }, [refreshKey, loadData]);
 
   if (error) {
     return React.createElement("div", {

@@ -183,10 +183,9 @@ function getHtml() {
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; }
-  #header { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 500px; padding: 8px 12px; flex-shrink: 0; }
-  #header-title { font-size: 12px; color: rgba(255,255,255,.3); font-weight: 500; letter-spacing: .5px; }
-  #header-status { font-size: 11px; color: rgba(255,255,255,.35); min-width: 80px; text-align: center; }
-  #header-actions { display: flex; gap: 6px; align-items: center; }
+  #header { display: flex; align-items: center; justify-content: flex-end; width: 100%; max-width: 500px; padding: 8px 12px; flex-shrink: 0; gap: 8px; }
+  #header-status { font-size: 11px; color: rgba(255,255,255,.4); flex: 1; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #header-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
   #close-btn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.3); color: rgba(255,255,255,.4); font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
   #close-btn:hover { background: rgba(255,60,60,.4); border-color: rgba(255,60,60,.5); color: #fff; }
   #player-frame { flex: 1; width: 100%; max-width: 480px; min-height: 0; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); background: #000; box-shadow: 0 4px 40px rgba(0,0,0,.6); margin: 0 12px; }
@@ -204,7 +203,6 @@ function getHtml() {
 </head>
 <body>
 ${MODE_WATCH ? `<div id="header">
-  <span id="header-title">remotion-engine</span>
   <span id="header-status"></span>
   <div id="header-actions">
     <button id="close-btn" title="Close player and return to terminal">✕</button>
@@ -225,7 +223,7 @@ const evtSource = new EventSource("/api/events");
 evtSource.onmessage = (e) => {
   const msg = JSON.parse(e.data);
   if (msg.type === "reload" && !suppressReload) {
-    location.reload();
+    window.dispatchEvent(new Event("refresh-player"));
   }
 };
 
@@ -260,8 +258,8 @@ async function applyEdit() {
     if (res.ok) {
       const summary = (data.output || "done").split("\\n")[0].slice(0, 65);
       headerStatus.textContent = summary;
-      // Reload after showing summary so user sees the change
-      setTimeout(() => { suppressReload = false; location.reload(); }, 4000);
+      // Refresh player in-place so timeline playback continues
+      setTimeout(() => { suppressReload = false; window.dispatchEvent(new Event("refresh-player")); }, 4000);
     } else {
       headerStatus.textContent = "\u274C " + (data.error || "failed");
       suppressReload = false;
@@ -388,9 +386,33 @@ const server = createServer((req, res) => {
 
           const prompt = `You are editing ${VIDEO_JSON.split("/").pop()}, a Remotion stream tree JSON.
 
-Timeline:\n${timelineInfo || "(could not read timeline)"}\n${historyStr}\nEdit request: ${text}
+Timeline:
+${timelineInfo || "(could not read timeline)"}
+${historyStr}
+Edit request: ${text}
 
-IMPORTANT: Only edit the JSON file. Do not explain or describe changes. Output the exact change you made.`;
+--- Knowledge ---
+Stream types: root(folder+w/h/fps+stylesheet), folder(children+isSeries+transition), video/audio/image/subtitle/component/effect/rhythm/map
+Actions on leaf types: [{start,end,style?,volume?,effectId?}] — seconds relative to parent
+Composition: isSeries=true → children play sequentially with transition; isSeries=false → parallel; isBackground=true → loops behind other children
+Components (use type=component, componentName=X, props={...}):
+  - AnimatedHeadline({text,subtext?,split?,gradient?,glow?}) — word-by-word kinetic typography
+  - TypewriterText({text,speed?}) — typing simulation
+  - GlitchReveal({text,intensity?}) — glitch-in text effect
+  - DeviceMockup({device,src,title?,shadow?,angle?}) — browser/phone frame
+  - CursorFlyover({screenshot,steps}) — animated cursor with annotations
+  - ComparisonSlider({before,after,matchPercent?}) — before/after comparison
+  - StatCounter({value,suffix?,label?}) — animated number counter
+  - ProgressBar({value,max?,label?}) — animated progress bar
+  - GradientBackground({type,animated?,noise?}) — animated gradient background
+  - ParticleField({count,speed,color?}) — particle system
+  - LightLeak({intensity?}) — cinematic light leak overlay
+  - SplitScreen({left?,right?,ratio?}) — side-by-side layout
+  - SpotlightReveal({size?,duration?}) — circular light reveal
+Subtitle styling: set style="color:...;font-size:...px" on subtitle node, or fontSize field, or use className on cues. Supports HTML in src. For word-highlight use className:"karaoke" with words[{text,start,end}] in cues.
+Themes: root.theme = "cinematic"|"minimal"|"neon"|"corporate" or inline JSON. Default cinematic.
+
+IMPORTANT: Only edit the JSON file. Output ONLY a one-line summary of what you changed. Do not add explanations.`;
 
           console.log(`  🤖 pi edit: ${text}`);
           const child = spawn("pi", ["-p", prompt], {

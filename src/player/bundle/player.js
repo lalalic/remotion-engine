@@ -46656,13 +46656,26 @@ function PlayerApp() {
   const [ready, setReady] = import_react125.default.useState(false);
   const [error49, setError] = import_react125.default.useState(null);
   const [data, setData] = import_react125.default.useState(null);
-  import_react125.default.useEffect(() => {
+  const [refreshKey, setRefreshKey] = import_react125.default.useState(0);
+  const loadData = import_react125.default.useCallback(() => {
+    setReady(false);
     fetch("/api/video-data").then((r) => r.json()).then((json2) => {
       const root2 = json2.root || json2;
       setData(root2);
       setReady(true);
     }).catch((e) => setError(e.message));
   }, []);
+  import_react125.default.useEffect(() => {
+    loadData();
+    const handler = () => {
+      setRefreshKey((k) => k + 1);
+    };
+    window.addEventListener("refresh-player", handler);
+    return () => window.removeEventListener("refresh-player", handler);
+  }, [loadData]);
+  import_react125.default.useEffect(() => {
+    if (refreshKey > 0) loadData();
+  }, [refreshKey, loadData]);
   if (error49) {
     return import_react125.default.createElement("div", {
       style: { color: "red", padding: 40, fontFamily: "sans-serif" }
