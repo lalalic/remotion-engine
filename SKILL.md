@@ -128,25 +128,37 @@ npm run preview -- scenes.json --label
 npm run preview -- scenes.json --label --port 3001
 ```
 
-Custom player with:
+Opens a **standalone label preview server** (`src/player/label-server.mjs`) — a simplified player with:
 
-- **Scene-by-scene playback** — plays each scene's media file directly (image or video), not a single rendered MP4
-- **Label input** — type a label, press Enter; it snapshots the current timestamp + scene metadata
-- **Thumbnail bar** — click any scene thumbnail to jump to it
-- **Auto-save** — labels persist to `labels.json` next to the source JSON
+- **Thumbnail strip** — each scene shows a clickable media preview (no text overlay, just images or initials)
+- **Seeking** — clicking a thumbnail seeks the player to that scene's start time via `PlayerRef.seekTo()`
+- **Auto-highlight** — as the video plays, the current scene's thumbnail is highlighted with a blue border
+- **Label input** — type a label, press Enter; saves with current timestamp + scene metadata to `labels.json`
+- **Green badge** — labeled scenes show a dot indicator on their thumbnail
+- **Media folder support** — pass a folder instead of JSON to auto-create scenes from media files
+
+```bash
+# From a JSON file
+npm run preview -- scenes.json --label
+
+# From a media folder (images/videos)
+npm run preview -- /path/to/media-folder --label
+```
 
 Each saved label records:
 
 ```json
 {
-  "time": 3.5,
+  "time": 4.242,
   "sceneIndex": 1,
-  "sceneName": "demo-scene",
-  "src": "vlog/photo_1_9x16.jpg",
+  "sceneName": "scene-2",
+  "src": "https://picsum.photos/seed/sub2/1080/1920",
   "mediaType": "image",
   "label": "good lighting, keep this shot"
 }
 ```
+
+The label mode is a separate server from edit mode — it has no file watcher, no SSE, and no AI editing pipeline. It's purely for interactive scene labeling.
 
 ### --edit: Auto-Reload on JSON Change
 
@@ -837,7 +849,8 @@ npm run render           # Smoke test: renders sample.json → out/preview.mp4
 |-------|------|
 | Full architecture design | `DESIGN.md` |
 | CLI source (all commands) | `src/render/cli.mjs` |
-| Player server (label/chat modes) | `src/player/server.mjs` |
+| Player server (edit mode) | `src/player/server.mjs` |
+| Player server (label mode) | `src/player/label-server.mjs` |
 | Stream tree schema (all 10 types) | `src/schema/index.ts` |
 | Subtitle renderer (caption styling) | `src/types/Subtitle.tsx` |
 | Effect/Animation engine | `src/types/Effect.tsx`, `src/types/keyframes.ts` |

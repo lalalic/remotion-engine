@@ -221,12 +221,14 @@ async function main() {
   if (args.command === "preview") {
     // Custom player modes
     if (args.label || args.edit) {
-      const playerServer = join(__dirname, "..", "player", "server.mjs");
+      const playerServer = args.label
+        ? join(__dirname, "..", "player", "label-server.mjs")
+        : join(__dirname, "..", "player", "server.mjs");
       if (!existsSync(playerServer)) {
         console.error("Player server not found at", playerServer);
         process.exit(1);
       }
-      const modeFlags = args.label ? "--label" : "";
+      const modeFlags = "";
       const editFlag = args.edit ? "--edit" : "";
       const portFlag = `--port=${args.port || 3001}`;
       const fileFlag = args.file || join(ROOT, "video.json");
