@@ -185,31 +185,28 @@ function getHtml() {
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; }
   #header { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 500px; padding: 8px 12px; flex-shrink: 0; }
   #header-title { font-size: 12px; color: rgba(255,255,255,.3); font-weight: 500; letter-spacing: .5px; }
-  #header-actions { display: flex; gap: 8px; align-items: center; }
-  #watch-indicator { display: flex; align-items: center; gap: 5px; font-size: 10px; color: rgba(255,255,255,.3); }
-  #watch-indicator .dot { width: 5px; height: 5px; border-radius: 50%; background: #4a9eff; animation: pulse-dot 2s infinite; }
-  @keyframes pulse-dot { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
-  #close-btn { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.3); color: rgba(255,255,255,.4); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  #header-status { font-size: 11px; color: rgba(255,255,255,.35); min-width: 80px; text-align: center; }
+  #header-actions { display: flex; gap: 6px; align-items: center; }
+  #close-btn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.3); color: rgba(255,255,255,.4); font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
   #close-btn:hover { background: rgba(255,60,60,.4); border-color: rgba(255,60,60,.5); color: #fff; }
   #player-frame { flex: 1; width: 100%; max-width: 480px; min-height: 0; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); background: #000; box-shadow: 0 4px 40px rgba(0,0,0,.6); margin: 0 12px; }
   #root { width: 100%; height: 100%; }
   #reload-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(74,158,255,.9); color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 200; backdrop-filter: blur(8px); }
   #reload-toast.show { opacity: 1; }
-  #bottom-bar { display: flex; gap: 8px; align-items: center; width: 100%; max-width: 500px; padding: 10px 12px; flex-shrink: 0; }
-  #edit-input { flex: 1; padding: 10px 14px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: #eee; border-radius: 10px; font-size: 13px; outline: none; transition: border-color .15s; }
+  #bottom-bar { display: flex; gap: 6px; align-items: center; width: 100%; max-width: 500px; padding: 8px 12px; flex-shrink: 0; }
+  #edit-input { flex: 1; padding: 8px 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: #eee; border-radius: 8px; font-size: 13px; outline: none; transition: border-color .15s; }
   #edit-input:focus { border-color: rgba(74,158,255,.5); }
   #edit-input::placeholder { color: rgba(255,255,255,.25); }
-  #edit-btn { padding: 8px 18px; background: #4a9eff; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background .15s; }
-  #edit-btn:hover { background: #3a8eef; }
-  #edit-status { font-size: 11px; color: rgba(255,255,255,.35); padding: 2px 6px; flex-shrink: 0; min-width: 70px; text-align: right; }
-  #edit-btn:disabled { opacity: 0.4; cursor: wait; }
+  #edit-btn { width: 32px; height: 32px; padding: 0; background: rgba(255,255,255,.06); color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
+  #edit-btn:hover { background: rgba(74,158,255,.2); border-color: rgba(74,158,255,.4); color: #4a9eff; }
+  #edit-btn:disabled { opacity: 0.3; cursor: wait; }
 </style>
 </head>
 <body>
 ${MODE_WATCH ? `<div id="header">
   <span id="header-title">remotion-engine</span>
+  <span id="header-status"></span>
   <div id="header-actions">
-    <div id="watch-indicator"><span class="dot"></span>watching</div>
     <button id="close-btn" title="Close player and return to terminal">✕</button>
   </div>
 </div>` : ""}
@@ -218,9 +215,8 @@ ${MODE_WATCH ? `<div id="header">
 </div>
 <div id="reload-toast">🔄 JSON changed — reloading...</div>
 ${MODE_WATCH ? `<div id="bottom-bar">
-  <input id="edit-input" placeholder="What should change? e.g. make text bigger, change color, speed up scene 2" />
-  <button id="edit-btn">Apply ✨</button>
-  <span id="edit-status"></span>
+  <input id="edit-input" placeholder="What should change? e.g. make text bigger" />
+  <button id="edit-btn" title="Apply edit">&#x2728;</button>
 </div>` : ""}
 <script src="/player.js" type="module"></script>
 ${MODE_WATCH ? `<script>
@@ -242,34 +238,31 @@ document.getElementById("close-btn")?.addEventListener("click", () => {
 // ─── Edit input ───────────────────────────────────────────────────────
 const editInput = document.getElementById("edit-input");
 const editBtn = document.getElementById("edit-btn");
-const editStatus = document.getElementById("edit-status");
+const headerStatus = document.getElementById("header-status");
 
 async function applyEdit() {
   const text = editInput.value.trim();
   if (!text) return;
   editBtn.disabled = true;
-  editStatus.textContent = "\u23F3 editing...";
-  editInput.disabled = true;
+  headerStatus.textContent = "\u231B editing...";
+  editInput.value = "";
   try {
     const res = await fetch("/api/edit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
     });
-    const data = await res.json();
     if (res.ok) {
-      editStatus.textContent = "\u2705 done";
+      headerStatus.textContent = "\u2705 done";
     } else {
-      editStatus.textContent = "\u274C " + (data.error || "failed");
-      editInput.value = text;
+      const data = await res.json();
+      headerStatus.textContent = "\u274C " + (data.error || "failed");
     }
   } catch (e) {
-    editStatus.textContent = "\u274C error";
-    editInput.value = text;
+    headerStatus.textContent = "\u274C error";
   }
   editBtn.disabled = false;
-  editInput.disabled = false;
-  setTimeout(() => { editStatus.textContent = ""; }, 3000);
+  setTimeout(() => { headerStatus.textContent = ""; }, 2500);
 }
 
 editBtn?.addEventListener("click", applyEdit);
