@@ -217,6 +217,60 @@ ${MODE_WATCH ? `<div id="bottom-bar">
   <span id="edit-status"></span>
 </div>` : ""}
 <script src="/player.js" type="module"></script>
+${MODE_WATCH ? `<script>
+// ─── SSE reload ───────────────────────────────────────────────────────
+const evtSource = new EventSource("/api/events");
+evtSource.onmessage = (e) => {
+  const msg = JSON.parse(e.data);
+  if (msg.type === "reload") {
+    location.reload();
+  }
+};
+
+// ─── Close button ─────────────────────────────────────────────────────
+document.getElementById("close-btn")?.addEventListener("click", () => {
+  navigator.sendBeacon("/api/shutdown", "{}");
+  document.body.innerHTML = "<div style='display:flex;align-items:center;justify-content:center;height:100vh;background:#111;color:#666;font-family:sans-serif;font-size:18px'>\u2B61 player closed — return to terminal</div>";
+});
+
+// ─── Edit input ───────────────────────────────────────────────────────
+const editInput = document.getElementById("edit-input");
+const editBtn = document.getElementById("edit-btn");
+const editStatus = document.getElementById("edit-status");
+
+async function applyEdit() {
+  const text = editInput.value.trim();
+  if (!text) return;
+  editBtn.disabled = true;
+  editStatus.textContent = "\u23F3 editing...";
+  editInput.disabled = true;
+  try {
+    const res = await fetch("/api/edit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      editStatus.textContent = "\u2705 done";
+    } else {
+      editStatus.textContent = "\u274C " + (data.error || "failed");
+      editInput.value = text;
+    }
+  } catch (e) {
+    editStatus.textContent = "\u274C error";
+    editInput.value = text;
+  }
+  editBtn.disabled = false;
+  editInput.disabled = false;
+  setTimeout(() => { editStatus.textContent = ""; }, 3000);
+}
+
+editBtn?.addEventListener("click", applyEdit);
+editInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); applyEdit(); }
+});
+</script>` : ""}
 
 </body>
 </html>`;
