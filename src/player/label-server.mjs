@@ -1,0 +1,555 @@
+#!/usr/bin/env node
+/**
+ * Label preview server — simplified standalone player for scene labeling.
+ *
+ * Usage:
+ *   node src/player/label-server.mjs <video.json> [--port 3031]
+ *   node src/player/label-server.mjs <media-folder> [--port 3031]
+ *
+ * Shows a player with thumbnail strip and label input.
+ * Labels are saved to labels.json alongside the source.
+ */
+import { createServer } from "node:http";
+import { readFileSync, writeFileSync, existsSync, statSync, createReadStream, readdirSync } from "node:fs";
+import { resolve, dirname, join, extname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(__dirname, "..", "..");
+const PORT = parseInt(process.argv.find(a => a.startsWith("--port="))?.split("=")[1] || "3031", 10);
+
+// Determine source: JSON file or media folder (3rd+ arg, skip --flags)
+const sourceArg = process.argv.slice(2).find(a => !a.startsWith("--"));
+const SOURCE = sourceArg ? resolve(sourceArg) : resolve(".");
+
+// ─── Scene parsing ─────────────────────────────────────────────────────
+let scenes = [];
+let totalDuration = 0;
+let videoData = null; // raw JSON to serve to the player
+const LABELS_PATH = join(dirname(SOURCE), "labels.json");
+const isFolder = existsSync(SOURCE) && statSync(SOURCE).isDirectory();
+
+if (isFolder) {
+  // Read media files from folder, sorted alphabetically
+  const mediaExts = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".webm", ".mov"]);
+  const files = readdirSync(SOURCE)
+    .filter(f => mediaExts.has(extname(f).toLowerCase()))
+    .sort()
+    .map(f => join(SOURCE, f));
+
+  let offset = 0;
+  files.forEach((f, i) => {
+    const ext = extname(f).toLowerCase();
+    const isVideo = ext === ".mp4" || ext === ".webm" || ext === ".mov";
+    const dur = 5; // default 5s per scene
+    scenes.push({
+      name: `scene-${i + 1}`,
+      start: offset,
+      end: offset + dur,
+      duration: dur,
+      src: `/media/${encodeURIComponent(f)}`,
+      mediaType: isVideo ? "video" : "image",
+    });
+    offset += dur;
+  });
+  totalDuration = offset;
+
+  // Build a bare stream-tree so the Remotion player can render
+  videoData = {
+    id: "root",
+    type: "root",
+    width: 1080,
+    height: 1920,
+    fps: 30,
+    isSeries: true,
+    transition: "fade",
+    theme: "cinematic",
+    children: scenes.map((s, i) => ({
+      id: s.name,
+      name: s.name,
+      type: "folder",
+      isSeries: false,
+      children: [{
+        id: `${s.name}-media`,
+        type: s.mediaType,
+        src: s.src,
+        fit: "cover",
+        actions: [{ start: 0, end: s.duration }],
+      }],
+    })),
+  };
+} else if (existsSync(SOURCE)) {
+  // Parse JSON file (stream tree or labels.json format)
+  try {
+    const raw = readFileSync(SOURCE, "utf-8");
+    const parsed = JSON.parse(raw);
+    videoData = parsed;
+
+    // Try to extract scenes
+    const root = parsed.root || parsed;
+
+    // Format 1: stream tree — folders as scenes
+    if (root.children?.length && !root.children.find(c => c.name === "scenes" || c.id === "scenes")) {
+      let offset = 0;
+      scenes = root.children
+        .filter(c => c.type === "folder" || c.children?.length)
+        .filter(c => !c.isBackground)
+        .map(s => {
+          const leaf = (s.children || []).find(c => c.src && (c.type === "image" || c.type === "video"));
+          const action = leaf?.actions?.[0] || s.actions?.[0] || {};
+          const dur = (action.end || 5) - (action.start || 0);
+          const scene = {
+            name: s.name || s.id || "scene",
+            start: offset,
+            end: offset + dur,
+            duration: dur,
+            src: leaf?.src || "",
+            mediaType: leaf?.type || "unknown",
+          };
+          offset += dur;
+          return scene;
+        });
+      totalDuration = offset;
+    }
+
+    // Format 2: flat scenes array (labels.json format)
+    if (scenes.length === 0 && Array.isArray(root.scenes)) {
+      scenes = root.scenes.map(s => ({
+        name: s.name || "scene",
+        start: s.start ?? 0,
+        end: s.end ?? (s.start ?? 0) + 5,
+        duration: (s.end ?? (s.start ?? 0) + 5) - (s.start ?? 0),
+        src: s.src || "",
+        mediaType: s.mediaType || "unknown",
+      }));
+      totalDuration = scenes.reduce((max, s) => Math.max(max, s.end), 0);
+    }
+
+    // Build stream tree for the player if we have scenes
+    if (scenes.length > 0 && (!videoData.type || videoData.type !== "root")) {
+      videoData = {
+        id: "root",
+        type: "root",
+        width: 1080,
+        height: 1920,
+        fps: 30,
+        isSeries: true,
+        transition: "fade",
+        theme: "cinematic",
+        children: scenes.map((s, i) => ({
+          id: s.name || ("scene-" + (i+1)),
+          name: s.name || ("scene-" + (i+1)),
+          type: "folder",
+          isSeries: false,
+          children: [{
+            id: (s.name || "scene-"+(i+1)) + "-media",
+            type: s.mediaType === "video" ? "video" : "image",
+            src: s.src,
+            fit: "cover",
+            actions: [{ start: 0, end: s.duration }],
+          }],
+        })),
+      };
+    }
+  } catch (e) {
+    console.error("Warning: could not parse source:", e.message);
+  }
+} else {
+  console.error(`Source not found: ${SOURCE}`);
+  process.exit(1);
+}
+
+// ─── MIME types ────────────────────────────────────────────────────────
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript",
+  ".css": "text/css",
+  ".json": "application/json",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
+  ".mp3": "audio/mpeg",
+  ".wasm": "application/wasm",
+};
+
+// ─── HTML page ─────────────────────────────────────────────────────────
+function getHtml() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Label Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; }
+  #header { display: flex; align-items: center; justify-content: flex-end; width: 100%; max-width: 500px; padding: 8px 12px; flex-shrink: 0; gap: 8px; }
+  #scene-info { font-size: 11px; color: rgba(255,255,255,.4); flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #close-btn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.3); color: rgba(255,255,255,.4); font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  #close-btn:hover { background: rgba(255,60,60,.4); border-color: rgba(255,60,60,.5); color: #fff; }
+  #player-frame { flex: 1; width: 100%; max-width: 480px; min-height: 0; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); background: #000; box-shadow: 0 4px 40px rgba(0,0,0,.6); margin: 0 12px; }
+  #root { width: 100%; height: 100%; }
+  #thumbnails { display: flex; gap: 6px; width: 100%; max-width: 500px; padding: 4px 12px; flex-shrink: 0; overflow-x: auto; scrollbar-width: thin; }
+  #thumbnails::-webkit-scrollbar { height: 4px; }
+  #thumbnails::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+  .thumb-item { flex-shrink: 0; width: 64px; height: 48px; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: all .15s; position: relative; background: rgba(255,255,255,.05); }
+  .thumb-item:hover { border-color: rgba(74,158,255,.4); }
+  .thumb-item.active { border-color: #4a9eff; box-shadow: 0 0 8px rgba(74,158,255,.3); }
+  .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb-item .thumb-badge { position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; background: #4ade80; border: 1px solid rgba(0,0,0,.4); display: none; }
+  .thumb-item .thumb-badge.has-label { display: block; }
+  #bottom-bar { display: flex; gap: 6px; align-items: center; width: 100%; max-width: 500px; padding: 8px 12px; flex-shrink: 0; }
+  #label-input { flex: 1; padding: 8px 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: #eee; border-radius: 8px; font-size: 13px; outline: none; transition: border-color .15s; }
+  #label-input:focus { border-color: rgba(74,158,255,.5); }
+  #label-input::placeholder { color: rgba(255,255,255,.25); }
+  #label-btn { width: 32px; height: 32px; padding: 0; background: rgba(255,255,255,.06); color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
+  #label-btn:hover { background: rgba(74,158,255,.2); border-color: rgba(74,158,255,.4); color: #4a9eff; }
+  #label-btn:disabled { opacity: 0.3; cursor: wait; }
+  #saved-toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: rgba(74,222,128,.9); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 500; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 200; backdrop-filter: blur(8px); }
+  #saved-toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="header">
+  <span id="scene-info"></span>
+  <div id="header-actions">
+    <button id="close-btn" title="Close">✕</button>
+  </div>
+</div>
+<div id="player-frame">
+  <div id="root"></div>
+</div>
+<div id="thumbnails"></div>
+<div id="saved-toast">✓ Label saved</div>
+<div id="bottom-bar">
+  <input id="label-input" placeholder="Add label for current scene…" />
+  <button id="label-btn" title="Save label">&#x1F4DD;</button>
+</div>
+<script src="/player.js" type="module"></script>
+<script>
+// ─── Close button ─────────────────────────────────────────────────────
+document.getElementById("close-btn")?.addEventListener("click", () => {
+  navigator.sendBeacon("/api/shutdown", "{}");
+  document.body.innerHTML = "<div style='display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:#555;font-family:sans-serif;font-size:16px'>\\u2B61 player closed</div>";
+});
+
+// ─── State ────────────────────────────────────────────────────────────
+var labelsData = { labels: [], scenes: [] };
+var currentTime = 0;
+var currentSceneIndex = 0;
+var selectedSceneOverride = -1;
+var labelInput = document.getElementById("label-input");
+var labelBtn = document.getElementById("label-btn");
+var savedToast = document.getElementById("saved-toast");
+var sceneInfo = document.getElementById("scene-info");
+var cachedInfo = null;
+
+// ─── Load existing labels ────────────────────────────────────────────
+fetch("/api/labels").then(function(r) {
+  if (r.ok) return r.json();
+  return { labels: [], scenes: [] };
+}).then(function(data) {
+  labelsData = data;
+  loadSceneInfo();
+}).catch(function() {});
+
+// ─── Scene info & thumbnails ─────────────────────────────────────────
+function loadSceneInfo(refresh) {
+  if (cachedInfo && !refresh) {
+    updateSceneInfo(cachedInfo);
+    return;
+  }
+  fetch("/api/video-info").then(function(r) { return r.json(); }).then(function(info) {
+    if (info.scenes && info.totalDuration) {
+      cachedInfo = info;
+      updateSceneInfo(info);
+    }
+  }).catch(function() {
+    if (cachedInfo) updateSceneInfo(cachedInfo);
+  });
+}
+
+function updateSceneInfo(info) {
+  if (!sceneInfo) return;
+  var scenes = info.scenes || [];
+  if (selectedSceneOverride >= 0) {
+    var selScene = scenes[selectedSceneOverride];
+    if (selScene) {
+      currentSceneIndex = selectedSceneOverride;
+      sceneInfo.textContent = selScene.name + " (selected)";
+      renderThumbnails(info);
+      return;
+    }
+  }
+  var currentScene = null;
+  for (var i = 0; i < scenes.length; i++) {
+    if (currentTime >= scenes[i].start && currentTime < scenes[i].end) {
+      currentScene = scenes[i];
+      currentSceneIndex = i;
+      break;
+    }
+  }
+  if (currentScene) {
+    sceneInfo.textContent = currentScene.name + " (" + currentTime.toFixed(1) + "s)";
+  } else {
+    sceneInfo.textContent = currentTime.toFixed(1) + "s";
+  }
+  renderThumbnails(info);
+}
+
+function renderThumbnails(info) {
+  var container = document.getElementById("thumbnails");
+  if (!container) return;
+  var scenes = info.scenes || [];
+  var hasLabels = labelsData.labels || [];
+  var html = "";
+  for (var i = 0; i < scenes.length; i++) {
+    var s = scenes[i];
+    var isActive = i === currentSceneIndex ? " active" : "";
+    var hasLabel = hasLabels.some(function(l) { return l.sceneIndex === i; }) ? " has-label" : "";
+    var thumbSrc = s.src || "";
+    var img;
+    if (thumbSrc) {
+      img = "<img src='" + thumbSrc + "' alt='' loading='lazy' />";
+    } else {
+      img = "<div style='width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);color:rgba(255,255,255,.3);font-size:16px;font-weight:600'>" + (s.name || "S" + (i+1)).slice(0,2).toUpperCase() + "</div>";
+    }
+    html += "<div class='thumb-item" + isActive + "' data-index='" + i + "'>"
+      + img
+      + "<div class='thumb-badge" + hasLabel + "'></div>"
+      + "</div>";
+  }
+  container.innerHTML = html;
+}
+
+// ─── Thumbnail click delegation ──────────────────────────────────────
+document.getElementById("thumbnails")?.addEventListener("click", function(e) {
+  var item = e.target.closest(".thumb-item");
+  if (item) {
+    var index = parseInt(item.getAttribute("data-index"), 10);
+    if (!isNaN(index)) seekToScene(index);
+  }
+});
+
+// ─── Seek to scene via player API ────────────────────────────────────
+function seekToScene(index) {
+  selectedSceneOverride = index;
+  currentSceneIndex = index;
+  loadSceneInfo();
+  // Seek player using exposed API
+  fetch("/api/video-info").then(function(r) { return r.json(); }).then(function(info) {
+    var scene = (info.scenes || [])[index];
+    if (scene && window.__remotionSeekTo) {
+      window.__remotionSeekTo(scene.start);
+    }
+  }).catch(function() {});
+}
+
+// ─── Poll player time ────────────────────────────────────────────────
+setInterval(function() {
+  var playerText = document.getElementById("player-frame")?.textContent || "";
+  var match = playerText.match(/(\\d+):(\\d+)\\s*\\//);
+  if (match) {
+    var prevTime = currentTime;
+    currentTime = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+    if (prevTime !== currentTime && prevTime > 0 && selectedSceneOverride >= 0) {
+      selectedSceneOverride = -1;
+    }
+  }
+  loadSceneInfo();
+}, 1000);
+
+// ─── Label save ──────────────────────────────────────────────────────
+function showSavedToast() {
+  savedToast?.classList.add("show");
+  setTimeout(function() { savedToast?.classList.remove("show"); }, 2000);
+}
+
+function saveLabel() {
+  var text = labelInput.value.trim();
+  if (!text) return;
+  labelBtn.disabled = true;
+
+  var sceneIndex = currentSceneIndex;
+  var sceneName = "";
+  fetch("/api/video-info").then(function(r) { return r.json(); }).then(function(info) {
+    var scene = (info.scenes || [])[sceneIndex];
+    if (scene) sceneName = scene.name;
+
+    var label = {
+      time: parseFloat(currentTime.toFixed(3)),
+      sceneIndex: sceneIndex,
+      sceneName: sceneName,
+      src: scene?.src || "",
+      mediaType: scene?.mediaType || "unknown",
+      label: text,
+    };
+
+    // Update existing or append
+    var existingIdx = -1;
+    for (var i = 0; i < labelsData.labels.length; i++) {
+      if (labelsData.labels[i].sceneIndex === sceneIndex) {
+        existingIdx = i;
+        break;
+      }
+    }
+    if (existingIdx >= 0) {
+      labelsData.labels[existingIdx].label = text;
+      labelsData.labels[existingIdx].time = currentTime;
+    } else {
+      labelsData.labels.push(label);
+    }
+
+    return fetch("/api/labels", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(labelsData),
+    });
+  }).then(function(res) {
+    if (res.ok) {
+      labelInput.value = "";
+      showSavedToast();
+      loadSceneInfo();
+    }
+  }).catch(function(e) {
+    console.error("Failed to save label:", e);
+  }).finally(function() {
+    labelBtn.disabled = false;
+  });
+}
+
+labelBtn?.addEventListener("click", saveLabel);
+labelInput?.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") { e.preventDefault(); saveLabel(); }
+});
+</script>
+</body>
+</html>`;
+}
+
+// ─── HTTP Server ──────────────────────────────────────────────────────────
+const server = createServer((req, res) => {
+  const url = new URL(req.url, "http://localhost");
+  const path = url.pathname;
+
+  try {
+    // API: Load/save labels
+    if (path === "/api/labels") {
+      if (req.method === "GET") {
+        try {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(readFileSync(LABELS_PATH, "utf-8"));
+        } catch {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ labels: [], scenes: scenes }));
+        }
+        return;
+      }
+      if (req.method === "POST") {
+        let body = "";
+        req.on("data", c => body += c);
+        req.on("end", () => {
+          try {
+            writeFileSync(LABELS_PATH, body, "utf-8");
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ saved: true }));
+          } catch (e) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: e.message }));
+          }
+        });
+        return;
+      }
+    }
+
+    // API: Video data for player
+    if (path === "/api/video-data") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(videoData));
+      return;
+    }
+
+    // API: Scene info
+    if (path === "/api/video-info") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ scenes, totalDuration, mode: { label: true } }));
+      return;
+    }
+
+    // API: Shutdown
+    if (path === "/api/shutdown") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ shutting_down: true }));
+      console.log("\\n  🚪 Shutdown requested\\n");
+      process.exit(0);
+    }
+
+    // Serve media files (when source is a folder)
+    if (path.startsWith("/media/")) {
+      const mediaPath = decodeURIComponent(path.replace("/media/", ""));
+      if (existsSync(mediaPath)) {
+        const ext = extname(mediaPath).toLowerCase();
+        const mime = MIME[ext] || "application/octet-stream";
+        const data = readFileSync(mediaPath);
+        res.writeHead(200, { "Content-Type": mime, "Cache-Control": "max-age=3600" });
+        res.end(data);
+        return;
+      }
+      res.writeHead(404);
+      res.end("Not found");
+      return;
+    }
+
+    // Serve player bundle
+    if (path === "/player.js") {
+      const bundlePath = join(ROOT, "src", "player", "bundle", "player.js");
+      if (existsSync(bundlePath)) {
+        const data = readFileSync(bundlePath);
+        res.writeHead(200, { "Content-Type": "text/javascript", "Cache-Control": "no-cache" });
+        res.end(data);
+        return;
+      }
+    }
+
+    // Serve static files
+    if (path === "/" || path === "/index.html") {
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(getHtml());
+      return;
+    }
+
+    // Serve from public/
+    const publicPath = join(ROOT, "public", path);
+    if (existsSync(publicPath) && statSync(publicPath).isFile()) {
+      const ext = extname(publicPath).toLowerCase();
+      const mime = MIME[ext] || "application/octet-stream";
+      res.writeHead(200, { "Content-Type": mime });
+      res.end(readFileSync(publicPath));
+      return;
+    }
+
+    res.writeHead(404);
+    res.end("Not found");
+  } catch (err) {
+    try {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end("Server error: " + err.message);
+    } catch (e2) {
+      console.error("Request error:", path, err.message);
+    }
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`\\n🏷️  Label Preview at http://localhost:${PORT}`);
+  console.log(`   Source: ${isFolder ? "📁 " + SOURCE : "📄 " + SOURCE}`);
+  console.log(`   Scenes: ${scenes.length}`);
+  console.log(`   Labels: ${LABELS_PATH}`);
+  console.log("");
+});

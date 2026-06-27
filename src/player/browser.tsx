@@ -3,18 +3,19 @@
  * Bundled with esbuild and served by the player server.
  * Renders stream tree JSON using @remotion/player with RemotionEngine.
  */
-import React from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import { Player } from "@remotion/player";
 import { RemotionEngine, builtinComponents, resolveTheme, getDurationInSeconds } from "../full.entry";
 
 function PlayerApp() {
+  const playerRef = useRef<any>(null);
   const [ready, setReady] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [data, setData] = React.useState<any>(null);
   const [refreshKey, setRefreshKey] = React.useState(0);
 
-  const loadData = React.useCallback(() => {
+  const loadData = useCallback(() => {
     setReady(false);
     fetch("/api/video-data")
       .then((r) => r.json())
@@ -26,18 +27,25 @@ function PlayerApp() {
       .catch((e) => setError(e.message));
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadData();
-    // Listen for in-place refresh events (no page reload)
     const handler = () => { setRefreshKey(k => k + 1); };
     window.addEventListener("refresh-player", handler);
     return () => window.removeEventListener("refresh-player", handler);
   }, [loadData]);
 
-  // Re-fetch data when refresh key changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (refreshKey > 0) loadData();
   }, [refreshKey, loadData]);
+
+  // Expose seek API for external scripts (runs after each render, ref gets populated)
+  useEffect(() => {
+    if (!data) return;
+    (window as any).__remotionSeekTo = (timeInSeconds: number) => {
+      const frame = Math.round(timeInSeconds * fps);
+      playerRef.current?.seekTo(frame);
+    };
+  });
 
   if (error) {
     return React.createElement("div", {
@@ -62,6 +70,7 @@ function PlayerApp() {
     style: { width: "100%", height: "100%", background: "#000" },
   },
     React.createElement(Player, {
+      ref: playerRef,
       component: RemotionEngine,
       inputProps: {
         root: data,

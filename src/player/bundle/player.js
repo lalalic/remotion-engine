@@ -46653,11 +46653,12 @@ var templateMeta = external_exports.object({
 
 // src/player/browser.tsx
 function PlayerApp() {
+  const playerRef = (0, import_react125.useRef)(null);
   const [ready, setReady] = import_react125.default.useState(false);
   const [error49, setError] = import_react125.default.useState(null);
   const [data, setData] = import_react125.default.useState(null);
   const [refreshKey, setRefreshKey] = import_react125.default.useState(0);
-  const loadData = import_react125.default.useCallback(() => {
+  const loadData = (0, import_react125.useCallback)(() => {
     setReady(false);
     fetch("/api/video-data").then((r) => r.json()).then((json2) => {
       const root2 = json2.root || json2;
@@ -46665,7 +46666,7 @@ function PlayerApp() {
       setReady(true);
     }).catch((e) => setError(e.message));
   }, []);
-  import_react125.default.useEffect(() => {
+  (0, import_react125.useEffect)(() => {
     loadData();
     const handler = () => {
       setRefreshKey((k) => k + 1);
@@ -46673,9 +46674,16 @@ function PlayerApp() {
     window.addEventListener("refresh-player", handler);
     return () => window.removeEventListener("refresh-player", handler);
   }, [loadData]);
-  import_react125.default.useEffect(() => {
+  (0, import_react125.useEffect)(() => {
     if (refreshKey > 0) loadData();
   }, [refreshKey, loadData]);
+  (0, import_react125.useEffect)(() => {
+    if (!data) return;
+    window.__remotionSeekTo = (timeInSeconds) => {
+      const frame = Math.round(timeInSeconds * fps);
+      playerRef.current?.seekTo(frame);
+    };
+  });
   if (error49) {
     return import_react125.default.createElement("div", {
       style: { color: "red", padding: 40, fontFamily: "sans-serif" }
@@ -46698,6 +46706,7 @@ function PlayerApp() {
       style: { width: "100%", height: "100%", background: "#000" }
     },
     import_react125.default.createElement(Player, {
+      ref: playerRef,
       component: RemotionEngine,
       inputProps: {
         root: data,
