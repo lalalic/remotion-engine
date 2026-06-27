@@ -224,7 +224,7 @@ ${MODE_WATCH ? `<script>
 const evtSource = new EventSource("/api/events");
 evtSource.onmessage = (e) => {
   const msg = JSON.parse(e.data);
-  if (msg.type === "reload") {
+  if (msg.type === "reload" && !suppressReload) {
     location.reload();
   }
 };
@@ -240,29 +240,37 @@ const editInput = document.getElementById("edit-input");
 const editBtn = document.getElementById("edit-btn");
 const headerStatus = document.getElementById("header-status");
 
+// Suppress SSE auto-reload during edits — we reload ourselves
+let suppressReload = false;
+
 async function applyEdit() {
   const text = editInput.value.trim();
   if (!text) return;
   editBtn.disabled = true;
   headerStatus.textContent = "\u231B editing...";
   editInput.value = "";
+  suppressReload = true;
   try {
     const res = await fetch("/api/edit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
     });
+    const data = await res.json();
     if (res.ok) {
-      headerStatus.textContent = "\u2705 done";
+      const summary = (data.output || "done").split("\\n")[0].slice(0, 65);
+      headerStatus.textContent = summary;
+      // Reload after showing summary so user sees the change
+      setTimeout(() => { suppressReload = false; location.reload(); }, 4000);
     } else {
-      const data = await res.json();
       headerStatus.textContent = "\u274C " + (data.error || "failed");
+      suppressReload = false;
     }
   } catch (e) {
     headerStatus.textContent = "\u274C error";
+    suppressReload = false;
   }
   editBtn.disabled = false;
-  setTimeout(() => { headerStatus.textContent = ""; }, 2500);
 }
 
 editBtn?.addEventListener("click", applyEdit);
