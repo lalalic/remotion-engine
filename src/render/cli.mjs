@@ -45,7 +45,7 @@ Commands:
   preview <file.json>                   Open Remotion Studio with the stream tree
     --force-new                         Start a new Studio instance even if another is running
     --label                           Open player with label input overlay
-    --watch                             Auto-reload player when JSON file changes (edit file, player refreshes)
+    --edit                             Auto-reload player when JSON file changes (edit file, player refreshes)
     --port <num>                        Port for the player server (default: 3001)
 `);
 }
@@ -100,7 +100,7 @@ function parseArgs(argv) {
     else if (flag === "--force-new") args.forceNew = true;
     else if (flag === "--verbose") args.verbose = true;
     else if (flag === "--label") args.label = true;
-    else if (flag === "--watch") args.watch = true;
+    else if (flag === "--edit") args.edit = true;
     else if (flag === "--port" && argv[i]) args.port = parseInt(argv[i], 10);
     else if (flag.startsWith("--port=")) args.port = parseInt(flag.split("=")[1], 10);
   }
@@ -220,19 +220,19 @@ async function main() {
 
   if (args.command === "preview") {
     // Custom player modes
-    if (args.label || args.watch) {
+    if (args.label || args.edit) {
       const playerServer = join(__dirname, "..", "player", "server.mjs");
       if (!existsSync(playerServer)) {
         console.error("Player server not found at", playerServer);
         process.exit(1);
       }
       const modeFlags = args.label ? "--label" : "";
-      const watchFlag = args.watch ? "--watch" : "";
+      const editFlag = args.edit ? "--edit" : "";
       const portFlag = `--port=${args.port || 3001}`;
       const fileFlag = args.file || join(ROOT, "video.json");
       const port = args.port || 3001;
-      const serverArgs = [playerServer, resolve(fileFlag), modeFlags, watchFlag, `--port=${port}`].filter(Boolean);
-      console.log(`\n▶ Starting player${args.label ? " (label mode)" : ""}${args.watch ? " (watch mode)" : ""} at http://localhost:${port}\n`);
+      const serverArgs = [playerServer, resolve(fileFlag), modeFlags, editFlag, `--port=${port}`].filter(Boolean);
+      console.log(`\n▶ Starting player${args.label ? " (label mode)" : ""}${args.edit ? " (edit mode)" : ""} at http://localhost:${port}\n`);
       const child = spawn("node", serverArgs, { cwd: ROOT, stdio: "inherit" });
       // Auto-open browser after short delay
       setTimeout(() => {

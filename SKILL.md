@@ -22,7 +22,7 @@ npm run preview -- sample.json
 npm run preview -- sample.json --label
 
 # Preview with chat (agent-assisted editing)
-npm run preview -- sample.json --watch
+npm run preview -- sample.json --edit
 ```
 
 ## Stream Tree JSON — The Input
@@ -93,7 +93,7 @@ npm run templates
 | `templates` | List all available templates |
 | `preview <file.json>` | Open Remotion Studio for visual debugging |
 | `preview <file.json> --label` | Custom player: interactive scene labeling |
-| `preview <file.json> --watch` | Custom player: auto-reloads when JSON file changes |
+| `preview <file.json> --edit` | Custom player: auto-reloads when JSON file changes |
 
 ### Options
 
@@ -106,7 +106,7 @@ npm run templates
 | `--verbose` | boolean | `false` | Show every progress frame (default: compact, every 50th) |
 | `--force-new` | boolean | `false` | Force new Studio instance |
 | `--label` | boolean | `false` | Player mode: scene labeling |
-| `--watch` | boolean | `false` | Player mode: auto-reload on JSON file change |
+| `--edit` | boolean | `false` | Player mode: auto-reload on JSON file change |
 | `--port` | number | `3001` | Player server port |
 
 ---
@@ -148,11 +148,11 @@ Each saved label records:
 }
 ```
 
-### --watch: Auto-Reload on JSON Change
+### --edit: Auto-Reload on JSON Change
 
 ```bash
-npm run preview -- my-video.json --watch
-npm run preview -- my-video.json --watch --port 3001
+npm run preview -- my-video.json --edit
+npm run preview -- my-video.json --edit --port 3001
 ```
 
 Same scene player as `--label` but **automatically reloads** when the JSON file is edited.
@@ -179,7 +179,7 @@ This is the mode to use for **agent-assisted editing**:
 
 ```bash
 # Agent starts player
-node src/render/cli.mjs preview draft.json --watch --port 3001
+node src/render/cli.mjs preview draft.json --edit --port 3001
 # → Player opens in browser, agent's terminal blocks waiting
 
 # Agent edits the JSON file (in another terminal or via tool)
@@ -200,7 +200,7 @@ The server watches the file with `fs.watchFile` and pushes reload events via SSE
 | `/api/video-info` | GET | Scene info + mode flags |
 | `/api/labels` | GET | Saved labels array |
 | `/api/labels` | POST | Save labels `{labels, scenes}` |
-| `/api/events` | GET | SSE stream for reload notifications (only in `--watch` mode) |
+| `/api/events` | GET | SSE stream for reload notifications (only in `--edit` mode) |
 
 ---
 
@@ -748,7 +748,7 @@ node src/render/cli.mjs preview scenes.json --label
 
 ### Agent-assisted editing session (pi / Codex CLI / Claude Code / Copilot CLI)
 
-This is the main pattern for using `--watch` with an AI coding agent.
+This is the main pattern for using `--edit` with an AI coding agent.
 
 The agent runs the player in the **background**, asks you for feedback via chat,
 edits the JSON, and the player auto-reloads.
@@ -759,7 +759,7 @@ edits the JSON, and the player auto-reloads.
 cd remotion-engine
 
 # Start player in background, log to file (terminal stays free)
-nohup node src/render/cli.mjs preview draft.json --watch --port 3001 \
+nohup node src/render/cli.mjs preview draft.json --edit --port 3001 \
   > /tmp/player-draft.log 2>&1 &
 
 # Browser auto-opens to http://localhost:3001
@@ -797,7 +797,7 @@ tail -f /tmp/player-draft.log | grep --line-buffered "USER FEEDBACK"
 
 **When using pi specifically**, the player can be started with:
 ```
-node src/render/cli.mjs preview <file> --watch --port 3001 &
+node src/render/cli.mjs preview <file> --edit --port 3001 &
 ```
 pi will print the URL and continue working. Edit the JSON, player auto-reloads.
 The user clicks ✕ when done → server exits → pi's background task completes cleanly.

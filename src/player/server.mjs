@@ -4,10 +4,10 @@
  *
  * Modes:
  *   --label   – playback with label input overlay; labels map to media timestamps
- *   --watch    – auto-reload when the JSON file changes (agent edits file, player refreshes)
+ *   --edit    – auto-reload when the JSON file changes (agent edits file, player refreshes)
  *
  * Usage:
- *   node src/player/server.mjs <video.json> [--label] [--watch] [--port 3001]
+ *   node src/player/server.mjs <video.json> [--label] [--edit] [--port 3001]
  */
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
@@ -23,7 +23,7 @@ const PORT = parseInt(process.argv.find(a => a.startsWith("--port="))?.split("="
 const jsonArg = process.argv.find(a => a.endsWith(".json") && !a.startsWith("--"));
 const VIDEO_JSON = jsonArg ? resolve(jsonArg) : join(ROOT, "video.json");
 const MODE_LABEL = process.argv.includes("--label");
-const MODE_WATCH = process.argv.includes("--watch");
+const MODE_EDIT = process.argv.includes("--edit");
 
 // ─── SSE clients for reload notifications ────────────────────────────────
 const sseClients = new Set();
@@ -101,8 +101,8 @@ try {
   console.error("Warning: could not parse video.json for scene info:", e.message);
 }
 
-// ─── Watch file for changes (--watch mode) ───────────────────────────────
-if (MODE_WATCH) {
+// ─── Watch file for changes (--edit mode) ───────────────────────────────
+if (MODE_EDIT) {
   watchFile(VIDEO_JSON, { interval: 500 }, (curr, prev) => {
     if (curr.mtimeMs === prev.mtimeMs) return;
     console.log(`  📁 ${VIDEO_JSON} changed, notifying clients...`);
@@ -171,8 +171,8 @@ function resolveAsset(urlPath) {
 // ─── HTML page ───────────────────────────────────────────────────────────
 function getHtml() {
   const hasLabel = MODE_LABEL ? "true" : "false";
-  const hasWatch = MODE_WATCH ? "true" : "false";
-  const title = MODE_LABEL ? " — Label" : MODE_WATCH ? " — Watch" : "";
+  const hasWatch = MODE_EDIT ? "true" : "false";
+  const title = MODE_LABEL ? " — Label" : MODE_EDIT ? " — Watch" : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -202,7 +202,7 @@ function getHtml() {
 </style>
 </head>
 <body>
-${MODE_WATCH ? `<div id="header">
+${MODE_EDIT ? `<div id="header">
   <span id="header-status"></span>
   <div id="header-actions">
     <button id="close-btn" title="Close player and return to terminal">✕</button>
@@ -212,12 +212,12 @@ ${MODE_WATCH ? `<div id="header">
   <div id="root"></div>
 </div>
 <div id="reload-toast">🔄 JSON changed — reloading...</div>
-${MODE_WATCH ? `<div id="bottom-bar">
+${MODE_EDIT ? `<div id="bottom-bar">
   <input id="edit-input" placeholder="What should change? e.g. make text bigger" />
   <button id="edit-btn" title="Apply edit">&#x2728;</button>
 </div>` : ""}
 <script src="/player.js" type="module"></script>
-${MODE_WATCH ? `<script>
+${MODE_EDIT ? `<script>
 // ─── SSE reload ───────────────────────────────────────────────────────
 const evtSource = new EventSource("/api/events");
 evtSource.onmessage = (e) => {
@@ -459,7 +459,7 @@ IMPORTANT: Only edit the JSON file. Output ONLY a one-line summary of what you c
       }
       req.on("close", () => {
         sseClients.delete(res);
-        if (MODE_WATCH && sseClients.size === 0) {
+        if (MODE_EDIT && sseClients.size === 0) {
           shutdownTimer = setTimeout(() => {
             console.error("\n  🚪 Browser tab closed — shutting down\n");
             process.exit(0);
@@ -495,7 +495,7 @@ IMPORTANT: Only edit the JSON file. Output ONLY a one-line summary of what you c
       res.end(JSON.stringify({
         scenes,
         totalDuration,
-        mode: { label: MODE_LABEL, watch: MODE_WATCH },
+        mode: { label: MODE_LABEL, edit: MODE_EDIT },
       }));
       return;
     }
@@ -553,10 +553,10 @@ IMPORTANT: Only edit the JSON file. Output ONLY a one-line summary of what you c
 });
 
 server.listen(PORT, () => {
-  const mode = MODE_LABEL ? " --label" : MODE_WATCH ? " --watch" : "";
+  const mode = MODE_LABEL ? " --label" : MODE_EDIT ? " --edit" : "";
   console.log(`\n🎬 Remotion Player${mode} at http://localhost:${PORT}`);
   console.log(`   JSON: ${VIDEO_JSON}`);
   if (MODE_LABEL) console.log(`   Labels: ${dirname(VIDEO_JSON)}/labels.json`);
-  if (MODE_WATCH) console.log(`   Watching ${VIDEO_JSON} for changes — edit the file and player auto-reloads`);
+  if (MODE_EDIT) console.log(`   Watching ${VIDEO_JSON} for changes — edit the file and player auto-reloads`);
   console.log("");
 });

@@ -1,14 +1,14 @@
 # Watch Mode
 
-> `preview <file.json> --watch` — live editing loop with AI-assisted JSON editing.
+> `preview <file.json> --edit` — live editing loop with AI-assisted JSON editing.
 
-Watch mode gives you a browser player that **automatically reloads** when the JSON file changes, plus an **edit input** that calls an AI coding agent (pi) to make changes on your behalf.
+Edit mode gives you a browser player that **automatically reloads** when the JSON file changes, plus an **edit input** that calls an AI coding agent (pi) to make changes on your behalf.
 
 ## Quickstart
 
 ```bash
 cd remotion-engine
-npm run preview -- sample-visual.json --watch
+npm run preview -- sample-visual.json --edit
 # → Browser opens, terminal blocks until you close it
 ```
 
@@ -40,10 +40,10 @@ npm run preview -- sample-visual.json --watch
 ### Server startup (`cli.mjs` → `server.mjs`)
 
 ```
-node src/render/cli.mjs preview file.json --watch --port 3031
+node src/render/cli.mjs preview file.json --edit --port 3031
 ```
 
-1. `cli.mjs` spawns `server.mjs` with `--watch` flag
+1. `cli.mjs` spawns `server.mjs` with `--edit` flag
 2. `server.mjs` parses `file.json` to build initial `scenes[]` array
 3. Starts `fs.watchFile(file.json, {interval:500})` — polls every 500ms for changes
 4. Starts HTTP server on specified port
@@ -114,11 +114,11 @@ The bundled player app:
 
 ## File: `src/render/cli.mjs`
 
-The CLI routes `--watch` flag to the player server:
+The CLI routes `--edit` flag to the player server:
 
 ```javascript
-if (args.watch) {
-  const serverArgs = ["src/player/server.mjs", file, "--watch", `--port=${port}`];
+if (args.edit) {
+  const serverArgs = ["src/player/server.mjs", file, "--edit", `--port=${port}`];
   const child = spawn("node", serverArgs, { cwd: ROOT, stdio: "inherit" });
   // ...blocks until server exits...
 }
