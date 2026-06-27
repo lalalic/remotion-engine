@@ -353,11 +353,36 @@ const server = createServer((req, res) => {
           if (!text) { res.writeHead(400); res.end(JSON.stringify({ error: "empty text" })); return; }
 
           editHistory.push(text);
+
+          // Build timeline context from current JSON
+          let timelineInfo = "";
+          try {
+            const raw = readFileSync(VIDEO_JSON, "utf-8");
+            const parsed = JSON.parse(raw);
+            const root = parsed.root || parsed;
+            const scenes = (root.children || []).filter(c => c.type === "folder" || c.children?.length);
+            timelineInfo = scenes.map((s, i) => {
+              const dur = s.durationInSeconds || s.children?.[0]?.actions?.[0]?.end || 5;
+              const components = (s.children || [])
+                .filter(c => !c.isBackground)
+                .map(c => {
+                  if (c.type === "component") return `${c.componentName}(${JSON.stringify(c.props || {})})`;
+                  if (c.type === "subtitle") return `subtitle("${(c.src || "").slice(0, 40)}")`;
+                  return `${c.type}${c.src ? `("${c.src.slice(0, 40)}")` : ""}`;
+                }).join(", ");
+              return `  Scene ${i+1} "${s.name || s.id || ""}" (${dur}s): ${components}`;
+            }).join("\n");
+          } catch {}
+
           const historyStr = editHistory.length > 1
             ? "\nPrevious edits on this file (in order):\n" + editHistory.slice(0, -1).map((e, i) => `${i+1}. ${e}`).join("\n") + "\n"
             : "";
 
-          const prompt = `You are editing ${VIDEO_JSON.split("/").pop()}, a Remotion stream tree JSON.${historyStr}\nNow: ${text}`;
+          const prompt = `You are editing ${VIDEO_JSON.split("/").pop()}, a Remotion stream tree JSON.
+
+Timeline:\n${timelineInfo || "(could not read timeline)"}\n${historyStr}\nEdit request: ${text}
+
+IMPORTANT: Only edit the JSON file. Do not explain or describe changes. Output the exact change you made.`;
 
           console.log(`  🤖 pi edit: ${text}`);
           const child = spawn("pi", ["-p", prompt], {
