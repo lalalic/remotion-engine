@@ -44,7 +44,7 @@ node src/render/cli.mjs preview file.json --edit --port 3031
 ```
 
 1. `cli.mjs` spawns `server.mjs` with `--edit` flag
-2. `server.mjs` parses `file.json` to build initial `scenes[]` array
+2. `server.mjs` parses `file.json` to build a recursive tree description
 3. Starts `fs.watchFile(file.json, {interval:500})` — polls every 500ms for changes
 4. Starts HTTP server on specified port
 5. Auto-opens browser via `open http://localhost:PORT`
@@ -67,11 +67,16 @@ Browser                          Server                          pi CLI
   │   {text: "make text bigger"}   │                              │
   │                                │── spawn("pi", ["-p", prompt])│
   │                                │   prompt includes:           │
-  │                                │   • timeline (4 scenes)      │
+  │                                │   • full tree description   │
+  │                                │     (recursive, any depth)  │
   │                                │   • edit history             │
-  │                                │   • knowledge (components,   │
-  │                                │     schema, styling guide)   │
+  │                                │   • knowledge (all stream   │
+  │                                │     types, components,      │
+  │                                │     schema, styling guide)  │
   │                                │   • edit request             │
+  │                                │                              │
+  │                                │   pi can edit ANY field on  │
+  │                                │   ANY node in the tree      │
   │                                │                              ├── edits file.json
   │                                │                              └── exits
   │                                │◄── exit code 0              │
@@ -138,15 +143,20 @@ if (args.edit) {
 
 ## The pi prompt
 
-Each edit call sends a structured prompt:
+Each edit call sends a structured prompt with a **recursive tree description** instead of a flat scene list:
 
 ```
 You are editing sample-visual.json, a Remotion stream tree JSON.
 
-Timeline:
-  Scene 1 "scene-1" (5s): AnimatedHeadline({"text":"Hello Remotion",...})
-  Scene 2 "scene-2" (5s): subtitle("This text is styled with CSS")
-  ...
+The stream tree (indentation shows nesting; timing in seconds):
+  root "root" (1080├ù1920, 30fps, series, transition:fade, theme:cinematic)
+    folder "scene-1" (parallel)
+      component GradientBackground {type:"radial",animated:true,noise:true} [0ÔåÆ5s, bg]
+      component AnimatedHeadline {"text":"Hello Remotion",...} [0.5ÔåÆ4.5s]
+    folder "scene-2" (parallel)
+      component GradientBackground {type:"linear",animated:true} [0ÔåÆ5s, bg]
+      subtitle "This text is styled with CSS" fontSize:52 [0.5ÔåÆ4.5s]
+    ...
 
 Previous edits:
 1. make scene 1 headline text orange
@@ -154,18 +164,21 @@ Previous edits:
 Edit request: make scene 1 headline text bigger
 
 --- Knowledge ---
-Stream types: root(folder+w/h/fps+stylesheet), folder(children+isSeries+transition), ...
-Components (use type=component, componentName=X, props={...}):
-  - AnimatedHeadline({text,subtext?,split?,gradient?,glow?})
-  - DeviceMockup({device,src,title?,shadow?,angle?})
-  ...
-Subtitle styling: set style="color:...;font-size:...px" on subtitle node...
-Themes: root.theme = "cinematic"|"minimal"|"neon"|"corporate"
-
-IMPORTANT: Only edit the JSON file. Output ONLY a one-line summary of what you changed.
+You can edit ANY field on ANY node in the JSON...
+Stream types: root, folder, video, audio, image, subtitle, component, effect, rhythm, map
+...
+IMPORTANT: Read the full existing JSON file before editing. Only edit the JSON file. You can change, add, or remove any field on any node. Output ONLY a one-line summary of what specific change you made.
 ```
 
-The knowledge section is extracted from `SKILL.md` and gives pi the schema, component props, and styling conventions without needing to read the project docs.
+The tree description walks the JSON recursively, showing:
+- **Nesting depth** via indentation
+- **Type** and **id/name** of each node
+- **Key fields** (dimensions, fps, theme, series/parallel, transitions)
+- **Timing** from actions (`[startÔåÆend]`)
+- **isBackground** flag (`[bg]`)
+- **Component props** and node-specific fields (fontSize, fit, style, volume, etc.)
+
+This means pi can edit **any aspect of the JSON** ÔÇö not just scene props. Nested folders, effects, rhythms, maps, actions, styles, themes, global stylesheets, audio config ÔÇö everything is visible and editable.
 
 ## Session context
 
@@ -174,7 +187,8 @@ The server maintains `editHistory[]` — every edit is appended. On each call, p
 ```
 Previous edits:
 1. make scene 1 headline text orange
-2. make scene 3 stat counter value 500
+2. change background from radial to linear gradient
+3. add 3D angle to device mockup in scene 4
 ```
 
 This gives pi enough context to make coherent changes across multiple edit rounds.

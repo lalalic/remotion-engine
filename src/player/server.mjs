@@ -360,24 +360,84 @@ const server = createServer((req, res) => {
 
           editHistory.push(text);
 
-          // Build timeline context from current JSON
-          let timelineInfo = "";
+          // Build tree structure description from current JSON (recursive, any depth)
+          let treeInfo = "";
           try {
             const raw = readFileSync(VIDEO_JSON, "utf-8");
             const parsed = JSON.parse(raw);
             const root = parsed.root || parsed;
-            const scenes = (root.children || []).filter(c => c.type === "folder" || c.children?.length);
-            timelineInfo = scenes.map((s, i) => {
-              const dur = s.durationInSeconds || s.children?.[0]?.actions?.[0]?.end || 5;
-              const components = (s.children || [])
-                .filter(c => !c.isBackground)
-                .map(c => {
-                  if (c.type === "component") return `${c.componentName}(${JSON.stringify(c.props || {})})`;
-                  if (c.type === "subtitle") return `subtitle("${(c.src || "").slice(0, 40)}")`;
-                  return `${c.type}${c.src ? `("${c.src.slice(0, 40)}")` : ""}`;
-                }).join(", ");
-              return `  Scene ${i+1} "${s.name || s.id || ""}" (${dur}s): ${components}`;
-            }).join("\n");
+
+            function describeNode(node, depth) {
+              const indent = "  ".repeat(depth);
+              const id = node.id || "";
+              const name = node.name || "";
+              const label = name || id;
+              const type = node.type || "unknown";
+              const dur = node.durationInSeconds !== undefined ? `, ${node.durationInSeconds}s` : "";
+
+              let line = `${indent}${type} "${label}"`;
+
+              if (type === "root") {
+                line += ` (${node.width}x${node.height}, ${node.fps}fps${node.isSeries ? ", series" : ""}${node.transition ? `, transition:${node.transition}` : ""}${node.theme ? `, theme:${node.theme}` : ""})`;
+              } else if (type === "folder") {
+                line += ` (${node.isSeries ? "series" : "parallel"}${node.transition ? `, transition:${node.transition}` : ""}${dur})`;
+              } else if (type === "component") {
+                const props = node.props ? JSON.stringify(Object.fromEntries(Object.entries(node.props).filter(([k]) => !k.startsWith("_")))) : "{}";
+                line += ` ${node.componentName}(${props.slice(0, 100)})${dur}`;
+              } else if (type === "subtitle") {
+                const txt = (node.src || "").slice(0, 60);
+                line += ` "${txt}"${dur}`;
+              } else if (type === "video" || type === "audio" || type === "image") {
+                const src = (node.src || "").slice(0, 50);
+                line += ` "${src}"${dur}`;
+              } else if (type === "effect") {
+                line += ` animation:${node.animation || "custom"}${dur}`;
+              } else if (type === "rhythm") {
+                line += ` src:"${(node.src || "").slice(0, 40)}"${dur}`;
+              } else if (type === "map") {
+                line += ` waypoints:${(node.waypoints || []).length}${dur}`;
+              }
+
+              // Add timing info for leaf actions
+              if (node.actions && node.actions.length > 0) {
+                const act = node.actions[0];
+                line += ` [${act.start}→${act.end}s`;
+                if (node.isBackground) line += ", bg";
+                if (act.volume !== undefined) line += `, vol:${act.volume}`;
+                if (act.style) line += `, style:"${act.style.slice(0, 40)}"`;
+                if (act.loop) line += `, loop:${act.loop}`;
+                line += `]`;
+              } else if (node.isBackground) {
+                line += ` [bg]`;
+              }
+
+              // Add notable fields
+              const extras = [];
+              if (node.componentName) extras.push(node.componentName);
+              if (node.fit) extras.push(`fit:${node.fit}`);
+              if (node.fontSize) extras.push(`fontSize:${node.fontSize}`);
+              if (node.volume !== undefined && type !== "root") extras.push(`vol:${node.volume}`);
+              if (node.playbackRate) extras.push(`rate:${node.playbackRate}`);
+              if (node.style) extras.push(`style:"${node.style.slice(0, 40)}"`);
+              if (node.transitionTime !== undefined) extras.push(`transTime:${node.transitionTime}`);
+              if (node.visible === false) extras.push("hidden");
+              if (extras.length > 0) line += ` {${extras.join(", ")}}`;
+
+              return line;
+            }
+
+            function walkTree(node, depth = 0) {
+              const lines = [describeNode(node, depth)];
+              if (node.children && node.children.length > 0) {
+                const shown = node.children.filter(c => c.visible !== false || c.visible === undefined);
+                for (const child of shown) {
+                  lines.push(...walkTree(child, depth + 1));
+                }
+              }
+              return lines;
+            }
+
+            treeInfo = walkTree(root).join("\n");
           } catch {}
 
           const historyStr = editHistory.length > 1
@@ -386,33 +446,56 @@ const server = createServer((req, res) => {
 
           const prompt = `You are editing ${VIDEO_JSON.split("/").pop()}, a Remotion stream tree JSON.
 
-Timeline:
-${timelineInfo || "(could not read timeline)"}
+The stream tree (indentation shows nesting; timing in seconds):
+${treeInfo || "(could not read tree)"}
 ${historyStr}
 Edit request: ${text}
 
 --- Knowledge ---
-Stream types: root(folder+w/h/fps+stylesheet), folder(children+isSeries+transition), video/audio/image/subtitle/component/effect/rhythm/map
-Actions on leaf types: [{start,end,style?,volume?,effectId?}] — seconds relative to parent
-Composition: isSeries=true → children play sequentially with transition; isSeries=false → parallel; isBackground=true → loops behind other children
-Components (use type=component, componentName=X, props={...}):
-  - AnimatedHeadline({text,subtext?,split?,gradient?,glow?}) — word-by-word kinetic typography
-  - TypewriterText({text,speed?}) — typing simulation
-  - GlitchReveal({text,intensity?}) — glitch-in text effect
-  - DeviceMockup({device,src,title?,shadow?,angle?}) — browser/phone frame
-  - CursorFlyover({screenshot,steps}) — animated cursor with annotations
-  - ComparisonSlider({before,after,matchPercent?}) — before/after comparison
-  - StatCounter({value,suffix?,label?}) — animated number counter
-  - ProgressBar({value,max?,label?}) — animated progress bar
-  - GradientBackground({type,animated?,noise?}) — animated gradient background
-  - ParticleField({count,speed,color?}) — particle system
-  - LightLeak({intensity?}) — cinematic light leak overlay
-  - SplitScreen({left?,right?,ratio?}) — side-by-side layout
-  - SpotlightReveal({size?,duration?}) — circular light reveal
-Subtitle styling: set style="color:...;font-size:...px" on subtitle node, or fontSize field, or use className on cues. Supports HTML in src. For word-highlight use className:"karaoke" with words[{text,start,end}] in cues.
-Themes: root.theme = "cinematic"|"minimal"|"neon"|"corporate" or inline JSON. Default cinematic.
+You can edit ANY field on ANY node in the JSON. Common fields across all types:
+  - id, name, type, style (inline CSS string), visible (boolean)
 
-IMPORTANT: Only edit the JSON file. Output ONLY a one-line summary of what you changed. Do not add explanations.`;
+Stream types:
+  root: {width, height, fps, isSeries, transition, transitionTime, theme, stylesheet, children}
+  folder: {isSeries (parallel if false), transition, transitionTime, children}
+  video: {src, volume, playbackRate, width, height, actions}
+  audio: {src, volume, foreground (ducks parent video), actions}
+  image: {src, fit (contain/cover/fill), actions}
+  subtitle: {src (text or VTT), cues[], fontSize, fontStyle, style, actions}
+  component: {componentName, props:{}, src (remote URL), actions}
+  effect: {animation (builtin name or "custom"), animationTimingFunction, animationIterationCount, customKeyframes, children, actions}
+  rhythm: {src (audio), volume, spots[] (beat timestamps), children, actions}
+  map: {waypoints[{lat,lng,label?,media?}], routeColor, routeWeight, markerSrc, zoom, actions}
+
+Actions (on leaf types): [{start, end, style?, volume?, effectId?, loop?}] — start/end in seconds, relative to parent container
+
+Composition rules:
+  - isSeries=true → children play sequentially (one after another), with optional transition between them
+  - isSeries=false → children play in parallel, max duration wins (default)
+  - isBackground=true → node loops for the full duration of its parent, excluded from duration calc
+  - transition can be: "fade"|"slide"|"wipe"|"flip"|"clockWipe"
+
+Built-in components (use type="component", componentName="X", props={...}):
+  - AnimatedHeadline({text, subtext?, split?"word"|"char"|"line", gradient?bool, glow?bool}) — word-by-word kinetic typography
+  - TypewriterText({text, speed?number}) — typing simulation
+  - GlitchReveal({text, intensity?number}) — glitch-in text effect
+  - DeviceMockup({device"browser"|"phone"|"tablet"|"laptop", src, title?, shadow?bool, angle?number}) — device frame
+  - CursorFlyover({screenshot, steps:[{region:{x,y,zoom},cursor:{x,y},annotation?,duration}]}) — cursor animation
+  - ComparisonSlider({before,after,matchPercent?number}) — before/after comparison
+  - StatCounter({value:number, suffix?string, label?string}) — animated counter
+  - ProgressBar({value:number, max?:number, label?string}) — animated progress
+  - GradientBackground({type"linear"|"radial"|"conic", animated?bool, noise?bool}) — gradient bg
+  - ParticleField({count:number, speed:number, color?string}) — particle system
+  - LightLeak({intensity?:0-1}) — cinematic light leak overlay
+  - SplitScreen({left?,right?,ratio?}) — side-by-side layout
+  - SpotlightReveal({size?:number, duration?:number}) — circular reveal
+
+Subtitle styling: style field supports CSS (e.g. "color:#fff;font-size:48px"). fontSize field for quick sizing. Supports HTML in src for rich text. For word-highlight karaoke: set className:"karaoke" on cue, or provide words[{text,start,end}] array.
+
+Themes: set root.theme = "cinematic"|"minimal"|"neon"|"corporate" or an inline theme JSON object. Default is "cinematic".
+Global stylesheet: root.stylesheet = "CSS string" — selectors use .type and .name class names on each node.
+
+IMPORTANT: Read the full existing JSON file before editing. Only edit the JSON file. You can change, add, or remove any field on any node. Output ONLY a one-line summary of what specific change you made. Do not add explanations.`;
 
           console.log(`  🤖 pi edit: ${text}`);
           const child = spawn("pi", ["-p", prompt], {

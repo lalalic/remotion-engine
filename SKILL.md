@@ -155,16 +155,22 @@ npm run preview -- my-video.json --edit
 npm run preview -- my-video.json --edit --port 3001
 ```
 
-Same scene player as `--label` but **automatically reloads** when the JSON file is edited.
+Opens a custom player with an **edit input** that sends edit requests to an AI agent (pi).
+The player **automatically reloads** when the JSON file changes.
+
+Unlike the label player, edit mode works with **any JSON structure** — not just flat scenes.
+The server builds a recursive description of the full stream tree, so the AI agent
+can edit any field on any node: text, timing, styles, themes, audio, effects, props,
+components, nested folders, transitions — everything.
 
 **Workflow**:
 
 1. Start the player
-2. Edit the JSON file in your editor (change text, timing, colors, etc.)
-3. Player detects the file change, re-parses scenes, and restarts playback — **no manual reload**
+2. Edit the JSON file in your editor (change text, timing, colors, themes, styles, audio, effects, etc.)
+3. Player detects the file change, re-reads the full tree, and restarts playback — **no manual reload**
 
 This is the mode to use for **agent-assisted editing**:
-- Agent edits the JSON file directly (timing, props, captions)
+- Agent edits the JSON file directly (any field: timing, props, styles, themes, audio, captions)
 - Player auto-refreshes within ~500ms
 - User sees changes immediately
 
