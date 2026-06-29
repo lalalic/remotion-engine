@@ -34,59 +34,8 @@
       "id": "subvideo-chapter",
       "type": "subvideo",
       "name": "Embedded Reel",
-      "width": 640,
-      "height": 480,
-      "fps": 30,
-      "isSeries": true,
-      "transition": "fade",
-      "transitionTime": 0.3,
-      "actions": [{ "start": 0, "end": 4 }],
-      "children": [
-        {
-          "id": "sub-scene-1",
-          "type": "folder",
-          "isSeries": false,
-          "children": [
-            {
-              "id": "sub-bg-1",
-              "type": "image",
-              "src": "https://picsum.photos/seed/subv-inner1/640/480",
-              "fit": "cover",
-              "actions": [{ "start": 0, "end": 2 }]
-            },
-            {
-              "id": "sub-title-1",
-              "type": "subtitle",
-              "src": "Subvideo Scene 1",
-              "fontSize": 36,
-              "style": "color: #ffffff; font-weight: bold;",
-              "actions": [{ "start": 0, "end": 2 }]
-            }
-          ]
-        },
-        {
-          "id": "sub-scene-2",
-          "type": "folder",
-          "isSeries": false,
-          "children": [
-            {
-              "id": "sub-bg-2",
-              "type": "image",
-              "src": "https://picsum.photos/seed/subv-inner2/640/480",
-              "fit": "cover",
-              "actions": [{ "start": 0, "end": 2 }]
-            },
-            {
-              "id": "sub-title-2",
-              "type": "subtitle",
-              "src": "Subvideo Scene 2",
-              "fontSize": 36,
-              "style": "color: #ffffff; font-weight: bold;",
-              "actions": [{ "start": 0, "end": 2 }]
-            }
-          ]
-        }
-      ]
+      "src": "data:application/json;base64,eyJpZCI6ICJyb290IiwgInR5cGUiOiAicm9vdCIsICJ3aWR0aCI6IDY0MCwgImhlaWdodCI6IDQ4MCwgImZwcyI6IDMwLCAiaXNTZXJpZXMiOiB0cnVlLCAidHJhbnNpdGlvbiI6ICJmYWRlIiwgInRyYW5zaXRpb25UaW1lIjogMC4zLCAiY2hpbGRyZW4iOiBbeyJpZCI6ICJzdWItc2NlbmUtMSIsICJ0eXBlIjogImZvbGRlciIsICJpc1NlcmllcyI6IGZhbHNlLCAiY2hpbGRyZW4iOiBbeyJpZCI6ICJzdWItYmctMSIsICJ0eXBlIjogImltYWdlIiwgInNyYyI6ICJodHRwczovL3BpY3N1bS5waG90b3Mvc2VlZC9zdWJ2LWlubmVyMS82NDAvNDgwIiwgImZpdCI6ICJjb3ZlciIsICJhY3Rpb25zIjogW3sic3RhcnQiOiAwLCAiZW5kIjogMn1dfSwgeyJpZCI6ICJzdWItdGl0bGUtMSIsICJ0eXBlIjogInN1YnRpdGxlIiwgInNyYyI6ICJTdWJ2aWRlbyBTY2VuZSAxIiwgImZvbnRTaXplIjogMzYsICJzdHlsZSI6ICJjb2xvcjogI2ZmZmZmZjsgZm9udC13ZWlnaHQ6IGJvbGQ7IiwgImFjdGlvbnMiOiBbeyJzdGFydCI6IDAsICJlbmQiOiAyfV19XX0sIHsiaWQiOiAic3ViLXNjZW5lLTIiLCAidHlwZSI6ICJmb2xkZXIiLCAiaXNTZXJpZXMiOiBmYWxzZSwgImNoaWxkcmVuIjogW3siaWQiOiAic3ViLWJnLTIiLCAidHlwZSI6ICJpbWFnZSIsICJzcmMiOiAiaHR0cHM6Ly9waWNzdW0ucGhvdG9zL3NlZWQvc3Vidi1pbm5lcjIvNjQwLzQ4MCIsICJmaXQiOiAiY292ZXIiLCAiYWN0aW9ucyI6IFt7InN0YXJ0IjogMCwgImVuZCI6IDJ9XX0sIHsiaWQiOiAic3ViLXRpdGxlLTIiLCAidHlwZSI6ICJzdWJ0aXRsZSIsICJzcmMiOiAiU3VidmlkZW8gU2NlbmUgMiIsICJmb250U2l6ZSI6IDM2LCAic3R5bGUiOiAiY29sb3I6ICNmZmZmZmY7IGZvbnQtd2VpZ2h0OiBib2xkOyIsICJhY3Rpb25zIjogW3sic3RhcnQiOiAwLCAiZW5kIjogMn1dfV19XX0=",
+      "actions": [{ "start": 0, "end": 4 }]
     },
     {
       "id": "outro",

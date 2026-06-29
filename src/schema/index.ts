@@ -161,6 +161,26 @@ export const rhythm = base.extend({
 export type Rhythm = z.infer<typeof rhythm>;
 
 // ---------------------------------------------------------------------------
+// Subvideo — references an external video JSON file by src.
+// The referenced file can be either:
+//   - A stream tree JSON (has `type: "root"` or `root` property)
+//   - A scene-based video.json (has `meta` and `scenes`)
+//
+// Usage:
+//   { type: "subvideo", src: "./path/to/video.json", actions: [{ start: 0, end: 5 }] }
+//
+// Falls back to inline `children` if `src` is not set (legacy behavior).
+// ---------------------------------------------------------------------------
+export const subvideo = base.extend({
+  type: z.literal("subvideo").default("subvideo"),
+  src: z.string().optional().describe("path or URL to video JSON file (stream tree or scene-based)"),
+  volume: z.number().min(0).max(1).default(1),
+  children: z.array(z.lazy((): z.ZodTypeAny => stream)).default(() => []),
+  actions: z.array(action).min(1).default(() => [action.parse({})]),
+});
+export type Subvideo = z.infer<typeof subvideo>;
+
+// ---------------------------------------------------------------------------
 // Map — animated route visualization
 // ---------------------------------------------------------------------------
 export const mapWaypoint = z.object({
@@ -196,10 +216,11 @@ export const stream = z.discriminatedUnion("type", [
   effect,
   rhythm,
   mapStream,
+  subvideo,
 ]);
 export type Stream = z.infer<typeof stream>;
 
 export const types = {
   root, folder, video, audio, image, subtitle, component,
-  effect, rhythm, map: mapStream,
+  effect, rhythm, map: mapStream, subvideo,
 } as const;

@@ -105,6 +105,33 @@ export function getDurationInSeconds(stream: DurationStream, update = true): num
     return stream.durationInSeconds ?? 0;
   }
 
+  // subvideo: if src is set, treat as leaf (duration from action end).
+  // Otherwise fall back to inline children (legacy).
+  if (stream.type === "subvideo") {
+    if (stream.src) {
+      // External reference — use action end (like other leaves)
+      const last = stream.actions?.[stream.actions.length - 1];
+      const d = last?.end ?? 0;
+      if (update) stream.durationInSeconds = d;
+      return d;
+    }
+    // Inline children fallback (legacy) — parallel max
+    const children = stream.children ?? [];
+    if (children.length && update) {
+      for (const child of children) {
+        getDurationInSeconds(child, update);
+      }
+    }
+    const visible = children.filter((c) => !c.isBackground);
+    let total = 0;
+    for (const c of visible) {
+      const d = c.durationInSeconds ?? 0;
+      if (d > total) total = d;
+    }
+    if (update) stream.durationInSeconds = total;
+    return total;
+  }
+
   // leaf with actions
   if (!stream.children?.length) {
     const last = stream.actions?.[stream.actions.length - 1];
