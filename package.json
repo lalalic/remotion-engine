@@ -1,5 +1,5 @@
 {
-  "name": "@neox/remotion-engine",
+  "name": "@lalaic/remotion-engine",
   "version": "0.1.0",
   "private": true,
   "description": "Render-only Remotion engine. Stream-typed timeline kernel.",
