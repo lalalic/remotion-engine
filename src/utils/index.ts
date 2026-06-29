@@ -132,13 +132,7 @@ export function getDurationInSeconds(stream: DurationStream, update = true): num
     return total;
   }
 
-  // scene: duration comes from the `duration` field directly
-  if (stream.type === "scene") {
-    const d = (stream as any).duration ?? 0;
-    if (update) stream.durationInSeconds = d;
-    return d;
-  }
-
+  // scene is a container (like folder) — falls through to general children logic
   // leaf with actions
   if (!stream.children?.length) {
     const last = stream.actions?.[stream.actions.length - 1];

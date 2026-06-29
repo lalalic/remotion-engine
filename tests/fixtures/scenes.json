@@ -12,27 +12,45 @@
     {
       "id": "scene-1",
       "type": "scene",
-      "componentName": "BigStatement",
-      "props": {
-        "headline": "Scene Rendering Works",
-        "subhead": "Testing the scene type in stream tree"
-      },
-      "duration": 3,
-      "captions": [
-        { "startFrom": 0, "endAt": 3, "text": "Scene rendering works" }
+      "name": "Intro",
+      "description": "Opening hook with headline animation",
+      "children": [
+        {
+          "id": "scene-1-bg",
+          "type": "component",
+          "componentName": "GradientBackground",
+          "props": { "type": "radial", "animated": true },
+          "isBackground": true,
+          "actions": [{ "start": 0, "end": 3 }]
+        },
+        {
+          "id": "scene-1-headline",
+          "type": "component",
+          "componentName": "BigStatement",
+          "props": {
+            "headline": "Scene Rendering Works",
+            "subhead": "Testing the scene type in stream tree"
+          },
+          "actions": [{ "start": 0, "end": 3 }]
+        }
       ]
     },
     {
       "id": "scene-2",
       "type": "scene",
-      "componentName": "BigStatement",
-      "props": {
-        "headline": "Test Complete",
-        "subhead": "All scene types render correctly"
-      },
-      "duration": 2,
-      "captions": [
-        { "startFrom": 0, "endAt": 2, "text": "Test complete" }
+      "name": "Conclusion",
+      "description": "Final message",
+      "children": [
+        {
+          "id": "scene-2-headline",
+          "type": "component",
+          "componentName": "BigStatement",
+          "props": {
+            "headline": "Test Complete",
+            "subhead": "All scene types render correctly"
+          },
+          "actions": [{ "start": 0, "end": 2 }]
+        }
       ]
     }
   ]

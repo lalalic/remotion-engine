@@ -181,28 +181,24 @@ export const include = base.extend({
 export type Include = z.infer<typeof include>;
 
 // ---------------------------------------------------------------------------
-// Scene — high-level storyboard node.
-// A scene is a leaf node that expands into a folder containing:
-//   - A component leaf (componentName + props)
-//   - An audio leaf for voiceover (if voiceover is set)
-//   - A subtitle leaf for captions (if captions are set)
-//
-// Scenes are the primary building block for agent-generated storyboards.
-// The engine instantiates them at render time via SceneLeaf.
+// Scene — descriptive container node for storyboarding.
+// A scene is a visual grouping node with metadata (name, description) that
+// renders its children like a folder. It exists so UI tools can display
+// high-level storyboard cards without needing to understand the full stream
+// tree. The engine treats it identically to a folder.
 //
 // Usage:
-//   { type: "scene", componentName: "BigStatement", props: { headline: "..." },
-//     voiceover: "TTS text or audio path", duration: 5 }
+//   { type: "scene", name: "Intro", description: "Opening hook",
+//     children: [{ type: "component", componentName: "BigStatement", ... }] }
 //
-// The parent folder's isSeries controls sequencing (like any other leaf).
+// Parent folder's isSeries controls sequencing (same as folder children).
 // ---------------------------------------------------------------------------
 export const scene = base.extend({
   type: z.literal("scene").default("scene"),
-  componentName: z.string().describe("key in ComposeContext components registry"),
-  props: z.record(z.string(), z.unknown()).default(() => ({})),
-  voiceover: z.string().optional().describe("TTS text or audio file path for voiceover"),
-  captions: z.array(subtitleCue).optional().describe("optional caption cues"),
-  duration: z.number().min(0).default(5).describe("scene duration in seconds"),
+  name: z.string().optional().describe("scene title for storyboard UI"),
+  description: z.string().optional().describe("scene description for storyboard UI"),
+  children: z.array(z.lazy((): z.ZodTypeAny => stream)).default(() => []),
+  durationInSeconds: z.number().optional().describe("set by engine; do not edit by hand"),
 });
 export type Scene = z.infer<typeof scene>;
 

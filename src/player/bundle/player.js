@@ -44310,12 +44310,7 @@ function getDurationInSeconds(stream2, update = true) {
     if (update) stream2.durationInSeconds = total2;
     return total2;
   }
-  // scene: duration comes from the `duration` field directly
-  if (stream2.type === "scene") {
-    const d = stream2.duration ?? 0;
-    if (update) stream2.durationInSeconds = d;
-    return d;
-  }
+  // scene is a container -- falls through to general children logic
   
   if (!stream2.children?.length) {
     const last = stream2.actions?.[stream2.actions.length - 1];
@@ -45614,6 +45609,13 @@ var include = base.extend({
   volume: external_exports.number().min(0).max(1).default(1),
   children: external_exports.array(external_exports.lazy(() => stream)).default(() => []),
   actions: external_exports.array(action).min(1).default(() => [action.parse({})])
+});
+var scene = base.extend({
+  type: external_exports.literal("scene").default("scene"),
+  name: external_exports.string().optional().describe("scene title for storyboard UI"),
+  description: external_exports.string().optional().describe("scene description for storyboard UI"),
+  children: external_exports.array(external_exports.lazy(() => stream)).default(() => []),
+  durationInSeconds: external_exports.number().optional().describe("set by engine; do not edit by hand")
 });
 var mapWaypoint = external_exports.object({
   lat: external_exports.number(),
