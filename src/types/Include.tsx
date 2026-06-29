@@ -4,7 +4,13 @@ import { ComposeContext, AudioContext } from "../context/index";
 import { cssJS, toClassName, getDurationInSeconds, type DurationStream } from "../utils/index";
 import type { Include as IncludeStream, Root } from "../schema/index";
 import { FolderLeaf } from "./Folder";
-import { ASPECT_DIMS } from "../scenes/types";
+
+// Aspect dimensions for scene-based video content
+const ASPECT_DIMS: Record<string, { width: number; height: number }> = {
+  "16x9": { width: 1920, height: 1080 },
+  "9x16": { width: 1080, height: 1920 },
+  "1x1": { width: 1080, height: 1080 },
+};
 
 interface SceneBasedVideo {
   meta: { title: string; fps: number; aspects?: string[] };
