@@ -442,13 +442,14 @@ const server = createServer((req, res) => {
     // API: Load/save labels
     if (path === "/api/labels") {
       if (req.method === "GET") {
+        let body;
         try {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(readFileSync(LABELS_PATH, "utf-8"));
+          body = readFileSync(LABELS_PATH, "utf-8");
         } catch {
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ labels: [], scenes: scenes }));
+          body = JSON.stringify({ labels: [], scenes: scenes });
         }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(body);
         return;
       }
       if (req.method === "POST") {
@@ -490,15 +491,33 @@ const server = createServer((req, res) => {
       process.exit(0);
     }
 
-    // Serve media files (when source is a folder)
+    // Serve media files (when source is a folder, with range support)
     if (path.startsWith("/media/")) {
       const mediaPath = decodeURIComponent(path.replace("/media/", ""));
       if (existsSync(mediaPath)) {
         const ext = extname(mediaPath).toLowerCase();
         const mime = MIME[ext] || "application/octet-stream";
-        const data = readFileSync(mediaPath);
-        res.writeHead(200, { "Content-Type": mime, "Cache-Control": "max-age=3600" });
-        res.end(data);
+        const fileSize = statSync(mediaPath).size;
+        const range = req.headers.range;
+        if (range) {
+          const parts = range.replace(/bytes=/, "").split("-");
+          const start = parseInt(parts[0], 10);
+          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+          const chunkSize = end - start + 1;
+          const stream = createReadStream(mediaPath, { start, end });
+          res.writeHead(206, {
+            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+            "Accept-Ranges": "bytes",
+            "Content-Length": chunkSize,
+            "Content-Type": mime,
+            "Cache-Control": "max-age=3600",
+          });
+          stream.pipe(res);
+        } else {
+          const data = readFileSync(mediaPath);
+          res.writeHead(200, { "Content-Type": mime, "Accept-Ranges": "bytes", "Content-Length": fileSize, "Cache-Control": "max-age=3600" });
+          res.end(data);
+        }
         return;
       }
       res.writeHead(404);
@@ -524,13 +543,35 @@ const server = createServer((req, res) => {
       return;
     }
 
-    // Serve from public/
+    // Serve from public/ (with range request support for video/audio)
     const publicPath = join(ROOT, "public", path);
     if (existsSync(publicPath) && statSync(publicPath).isFile()) {
       const ext = extname(publicPath).toLowerCase();
       const mime = MIME[ext] || "application/octet-stream";
-      res.writeHead(200, { "Content-Type": mime });
-      res.end(readFileSync(publicPath));
+      const fileSize = statSync(publicPath).size;
+      const range = req.headers.range;
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        const chunkSize = end - start + 1;
+        const stream = createReadStream(publicPath, { start, end });
+        res.writeHead(206, {
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunkSize,
+          "Content-Type": mime,
+        });
+        stream.pipe(res);
+      } else {
+        const data = readFileSync(publicPath);
+        res.writeHead(200, {
+          "Content-Type": mime,
+          "Accept-Ranges": "bytes",
+          "Content-Length": fileSize,
+        });
+        res.end(data);
+      }
       return;
     }
 

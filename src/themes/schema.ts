@@ -21,7 +21,9 @@ export const themeSchema = z.object({
     secondary: z.string().default("#ec4899"),
     text: z.string().default("#fafafa"),
     textMuted: z.string().default("#a1a1aa"),
+    border: z.string().default("#27272a"),
     gradient: z.tuple([z.string(), z.string()]).default(["#f97316", "#ec4899"]),
+    chart: z.array(z.string()).default(["#f97316", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"]),
   }),
   fonts: z.object({
     heading: z.string().default("'SF Pro Display', 'Inter', sans-serif"),

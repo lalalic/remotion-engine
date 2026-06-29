@@ -72,6 +72,47 @@ npm test
 - Includes: timeline, edit history, knowledge (components/schema/styling), edit request
 - Edit history accumulates per session (editHistory[] array)
 
+## Subvideo type (nested compositions)
+
+`subvideo` is a stream type that embeds a **complete video composition** (self-contained stream tree) as a single node. This lets editors compose videos from independently-authored sub-parts.
+
+**Schema** (from `schema/index.ts`):
+```
+subvideo: {
+  type: "subvideo",
+  width, height, fps,          // own dimensions (metadata; internal rendering uses parent FPS)
+  isSeries, transition,        // controls internal child sequencing
+  children: Stream[],          // full stream tree
+  actions: Action[]            // {start, end} relative to subvideo's own timeline for trimming/offset
+}
+```
+
+**Rendering**: `SubvideoLeaf` wraps the internal children in a `Container` sized to the subvideo's own dimensions. Inside, `FolderLeaf` renders the child tree. The parent Folder handles placement via Series/Sequence (same as any leaf).
+
+**Duration**: computed from internal children (like a folder), not from actions. Actions control internal trimming.
+
+**Example** — a main video with an embedded subvideo chapter:
+```json
+{
+  "children": [
+    { "id": "intro", "type": "folder", ... },       // 4s
+    { "id": "chapter", "type": "subvideo",         // 8.4s (internal children)
+      "width": 1080, "height": 1920, "fps": 30,
+      "isSeries": true, "transition": "fade",
+      "actions": [{ "start": 0, "end": 8.4 }],
+      "children": [ /* full stream tree */ ]
+    },
+    { "id": "outro", "type": "folder", ... }       // 3s
+  ]
+}
+```
+
+**Key points for AI editing**:
+- A subvideo's children are a full stream tree — editors can focus on the subvideo content independently
+- Subvideo's `isSeries`/`transition` control internal ordering (independent of parent)
+- Subvideo's `actions[0].start` = offset within the subvideo (usually 0 for full play)
+- Subvideo acts as foreground audio — mutes parent video while playing
+
 ## Key patterns
 
 - **Never use studio** — preview uses bundled @remotion/player

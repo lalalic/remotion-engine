@@ -56,7 +56,7 @@ Minimal example (`sample.json`):
 }
 ```
 
-**10 stream types**: `root`, `folder`, `video`, `audio`, `image`, `subtitle`, `component`, `effect`, `rhythm`, `map`.
+**11 stream types**: `root`, `folder`, `video`, `audio`, `image`, `subtitle`, `component`, `effect`, `rhythm`, `map`, `subvideo`.
 
 **Composition logic**:
 - **Series** (`isSeries: true`) — children play one after another, with optional transition (`fade`, `slide`, `wipe`, `flip`, `clockWipe`)
@@ -702,6 +702,74 @@ Fields:
 
 This is a **native stream type** (`type: "map"`), not a component in the registry. It renders a full-canvas overlay. For full Google Maps integration (DirectionsService, satellite tiles), create a custom component instead.
 
+#### E. Subvideo — Nested Video Composition (subvideo stream type)
+
+The `subvideo` stream type embeds a **fully self-contained video composition** (complete stream tree) as a single node. This lets editors compose videos from independently-authored sub-parts.
+
+```json
+{
+  "id": "feature-reel",
+  "type": "subvideo",
+  "name": "Embedded Feature Reel",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "isSeries": true,
+  "transition": "fade",
+  "transitionTime": 0.3,
+  "actions": [{ "start": 0, "end": 8.4 }],
+  "children": [
+    {
+      "id": "scene-1",
+      "type": "folder",
+      "children": [
+        { "id": "bg-1", "type": "image", "src": "https://picsum.photos/seed/sub1/1080/1920", "fit": "cover",
+          "actions": [{ "start": 0, "end": 3 }] },
+        { "id": "title-1", "type": "subtitle", "src": "Feature 1", "fontSize": 48,
+          "actions": [{ "start": 0, "end": 3 }] }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "type": "folder",
+      "children": [
+        { "id": "bg-2", "type": "image", "src": "https://picsum.photos/seed/sub2/1080/1920", "fit": "cover",
+          "actions": [{ "start": 0, "end": 3 }] },
+        { "id": "title-2", "type": "subtitle", "src": "Feature 2", "fontSize": 48,
+          "actions": [{ "start": 0, "end": 3 }] }
+      ]
+    }
+  ]
+}
+```
+
+**How it works**:
+- The subvideo has its own `width`, `height`, `fps`, `children` — a complete independent stream tree
+- **Duration** is computed from internal children (like a folder), not from actions
+- Actions control **internal trimming**: `actions[0].start` = offset within the subvideo (usually 0 for full play)
+- The parent Folder positions the subvideo via Series (sequential) or Sequence (parallel) wrapping — same as any leaf
+- **Foreground audio**: the subvideo sets `foreground: true` on AudioContext, muting the parent's video while playing
+
+**Fields**:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `width` | int | 1080 | Subvideo's own render width |
+| `height` | int | 1920 | Subvideo's own render height |
+| `fps` | int | 30 | Own framerate (metadata; internal renders at parent FPS) |
+| `isSeries` | bool | — | If true, children play sequentially |
+| `transition` | string | — | `fade`, `slide`, `wipe`, `flip`, `clockWipe` for internal series |
+| `transitionTime` | number | 0.5 | Transition overlap in seconds |
+| `volume` | number | 1 | Audio volume |
+| `children` | array | `[]` | Full stream tree — any node types |
+| `actions` | array | required | `[{start, end}]` relative to subvideo's own timeline |
+
+**Use cases**:
+- Embed a chapter or segment authored by a different editor
+- Reuse a composed sequence (e.g. intro bumper) across multiple videos
+- Compose a video from independently-developed sub-videos
+- Each subvideo can have its own layout, timing, theme stylesheet, and transitions
+
 #### D. Remote Components (load from URL)
 
 The `component` stream type's `src` field lets you load a React component from a remote URL at render time:
@@ -851,8 +919,9 @@ npm run render           # Smoke test: renders sample.json → out/preview.mp4
 | CLI source (all commands) | `src/render/cli.mjs` |
 | Player server (edit mode) | `src/player/server.mjs` |
 | Player server (label mode) | `src/player/label-server.mjs` |
-| Stream tree schema (all 10 types) | `src/schema/index.ts` |
+| Stream tree schema (all 11 types) | `src/schema/index.ts` |
 | Subtitle renderer (caption styling) | `src/types/Subtitle.tsx` |
+| Subvideo renderer (nested stream tree) | `src/types/Subvideo.tsx` |
 | Effect/Animation engine | `src/types/Effect.tsx`, `src/types/keyframes.ts` |
 | Dynamic component loader | `src/types/DynamicLoader.tsx` |
 | Theme system | `src/themes/` |
