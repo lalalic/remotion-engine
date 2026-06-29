@@ -305,13 +305,13 @@ describe("Audio Rendering", () => {
 });
 
 // ───────────────────────────────────────────────────────────────────────────
-// 7. Subvideo (Nested Composition)
+// 7. Include (External Video Composition)
 // ───────────────────────────────────────────────────────────────────────────
 
-describe("Subvideo Rendering", () => {
-  it("renders a nested subvideo composition", async () => {
+describe("Include Rendering", () => {
+  it("renders an external video via include", async () => {
     const output = renderFixture(fixturePath("subvideo.json"), {
-      outputName: "subvideo.mp4",
+      outputName: "include.mp4",
       timeout: RENDER_TIMEOUT,
     });
 
@@ -321,22 +321,22 @@ describe("Subvideo Rendering", () => {
     expect(info.durationSec).toBeGreaterThanOrEqual(7);
 
     // Extract frame at 1s (main video, intro)
-    const frameMain = outPath("frames/subvideo-main-1s.png");
+    const frameMain = outPath("frames/include-main-1s.png");
     extractFrame(output, 1, frameMain);
     expect(isFrameNonBlank(frameMain)).toBe(true);
 
-    // Extract frame at 3s (subvideo playing)
-    const frameSub = outPath("frames/subvideo-sub-3s.png");
+    // Extract frame at 3s (included video playing)
+    const frameSub = outPath("frames/include-sub-3s.png");
     extractFrame(output, 3, frameSub);
     expect(isFrameNonBlank(frameSub)).toBe(true);
 
-    // Extract frame at 5s (subvideo scene 2)
-    const frameSub2 = outPath("frames/subvideo-sub-5s.png");
+    // Extract frame at 5s (included video scene 2)
+    const frameSub2 = outPath("frames/include-sub-5s.png");
     extractFrame(output, 5, frameSub2);
     expect(isFrameNonBlank(frameSub2)).toBe(true);
 
     // Extract frame at 7s (outro)
-    const frameOutro = outPath("frames/subvideo-outro-7s.png");
+    const frameOutro = outPath("frames/include-outro-7s.png");
     extractFrame(output, 7, frameOutro);
     expect(isFrameNonBlank(frameOutro)).toBe(true);
   });

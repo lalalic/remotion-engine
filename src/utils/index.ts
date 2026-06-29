@@ -105,9 +105,9 @@ export function getDurationInSeconds(stream: DurationStream, update = true): num
     return stream.durationInSeconds ?? 0;
   }
 
-  // subvideo: if src is set, treat as leaf (duration from action end).
+  // include: if src is set, treat as leaf (duration from action end).
   // Otherwise fall back to inline children (legacy).
-  if (stream.type === "subvideo") {
+  if (stream.type === "include") {
     if (stream.src) {
       // External reference — use action end (like other leaves)
       const last = stream.actions?.[stream.actions.length - 1];

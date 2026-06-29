@@ -772,7 +772,7 @@ var require_scheduler = __commonJS({
 var require_react_dom_production = __commonJS({
   "node_modules/react-dom/cjs/react-dom.production.js"(exports) {
     "use strict";
-    var React48 = require_react();
+    var React49 = require_react();
     function formatProdErrorMessage(code) {
       var url2 = "https://react.dev/errors/" + code;
       if (1 < arguments.length) {
@@ -812,7 +812,7 @@ var require_react_dom_production = __commonJS({
         implementation
       };
     }
-    var ReactSharedInternals = React48.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+    var ReactSharedInternals = React49.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
     function getCrossOriginStringAs(as, input) {
       if ("font" === as) return "";
       if ("string" === typeof input)
@@ -948,7 +948,7 @@ var require_react_dom_client_production = __commonJS({
   "node_modules/react-dom/cjs/react-dom-client.production.js"(exports) {
     "use strict";
     var Scheduler = require_scheduler();
-    var React48 = require_react();
+    var React49 = require_react();
     var ReactDOM = require_react_dom();
     function formatProdErrorMessage(code) {
       var url2 = "https://react.dev/errors/" + code;
@@ -1139,7 +1139,7 @@ var require_react_dom_client_production = __commonJS({
       return null;
     }
     var isArrayImpl = Array.isArray;
-    var ReactSharedInternals = React48.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+    var ReactSharedInternals = React49.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
     var ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
     var sharedNotPendingObject = {
       pending: false,
@@ -12585,7 +12585,7 @@ var require_react_dom_client_production = __commonJS({
         0 === i && attemptExplicitHydrationTarget(target);
       }
     };
-    var isomorphicReactPackageVersion$jscomp$inline_1840 = React48.version;
+    var isomorphicReactPackageVersion$jscomp$inline_1840 = React49.version;
     if ("19.2.5" !== isomorphicReactPackageVersion$jscomp$inline_1840)
       throw Error(
         formatProdErrorMessage(
@@ -27896,7 +27896,7 @@ var forward2 = import_react110.forwardRef;
 var Thumbnail = forward2(ThumbnailFn);
 
 // src/lite.entry.tsx
-var React41 = __toESM(require_react(), 1);
+var React43 = __toESM(require_react(), 1);
 
 // src/context/index.tsx
 var React8 = __toESM(require_react(), 1);
@@ -27921,7 +27921,9 @@ var cinematic = {
     secondary: "#ec4899",
     text: "#fafafa",
     textMuted: "#a1a1aa",
-    gradient: ["#f97316", "#ec4899"]
+    border: "#27272a",
+    gradient: ["#f97316", "#ec4899"],
+    chart: ["#f97316", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"]
   },
   fonts: {
     heading: "'SF Pro Display', 'Inter', sans-serif",
@@ -27949,7 +27951,9 @@ var minimal = {
     secondary: "#3b82f6",
     text: "#18181b",
     textMuted: "#71717a",
-    gradient: ["#18181b", "#3b82f6"]
+    border: "#e4e4e7",
+    gradient: ["#18181b", "#3b82f6"],
+    chart: ["#18181b", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"]
   },
   fonts: {
     heading: "'Inter', 'Helvetica Neue', sans-serif",
@@ -27977,7 +27981,9 @@ var neon = {
     secondary: "#00d4ff",
     text: "#e0e0e0",
     textMuted: "#888888",
-    gradient: ["#00ff88", "#00d4ff"]
+    border: "#1a1a2e",
+    gradient: ["#00ff88", "#00d4ff"],
+    chart: ["#00ff88", "#00d4ff", "#ff00ff", "#ffff00", "#ff6600", "#ff0066"]
   },
   fonts: {
     heading: "'Space Grotesk', 'Inter', sans-serif",
@@ -28005,7 +28011,9 @@ var corporate = {
     secondary: "#f59e0b",
     text: "#f8fafc",
     textMuted: "#94a3b8",
-    gradient: ["#3b82f6", "#8b5cf6"]
+    border: "#1e293b",
+    gradient: ["#3b82f6", "#8b5cf6"],
+    chart: ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899"]
   },
   fonts: {
     heading: "'Plus Jakarta Sans', 'Inter', sans-serif",
@@ -28024,11 +28032,135 @@ var corporate = {
     grain: 0
   }
 };
+var cleanProfessional = {
+  name: "clean-professional",
+  colors: {
+    background: "#FFFFFF",
+    surface: "#F9FAFB",
+    primary: "#2563EB",
+    secondary: "#F59E0B",
+    text: "#1F2937",
+    textMuted: "#6B7280",
+    border: "#E5E7EB",
+    gradient: ["#2563EB", "#F59E0B"],
+    chart: ["#2563EB", "#F59E0B", "#10B981", "#8B5CF6", "#EC4899", "#06B6D4"]
+  },
+  fonts: {
+    heading: "'Inter', sans-serif",
+    body: "'Inter', sans-serif",
+    mono: "'JetBrains Mono', monospace"
+  },
+  timing: {
+    spring: { damping: 20, stiffness: 120, mass: 1 },
+    stagger: 3,
+    transitionDuration: 0.4
+  },
+  effects: {
+    particles: false,
+    gradientBg: false,
+    motionBlur: false,
+    grain: 0
+  }
+};
+var flatMotionGraphics = {
+  name: "flat-motion-graphics",
+  colors: {
+    background: "#0F172A",
+    surface: "#1E293B",
+    primary: "#7C3AED",
+    secondary: "#EC4899",
+    text: "#F8FAFC",
+    textMuted: "#94A3B8",
+    border: "#334155",
+    gradient: ["#7C3AED", "#EC4899"],
+    chart: ["#7C3AED", "#EC4899", "#06B6D4", "#F59E0B", "#10B981", "#EF4444"]
+  },
+  fonts: {
+    heading: "'Space Grotesk', 'Inter', sans-serif",
+    body: "'Inter', sans-serif",
+    mono: "'Fira Code', monospace"
+  },
+  timing: {
+    spring: { damping: 12, stiffness: 80, mass: 1 },
+    stagger: 3,
+    transitionDuration: 0.3
+  },
+  effects: {
+    particles: true,
+    gradientBg: true,
+    motionBlur: false,
+    grain: 0.02
+  }
+};
+var minimalistDiagram = {
+  name: "minimalist-diagram",
+  colors: {
+    background: "#FAFAFA",
+    surface: "#FFFFFF",
+    primary: "#E94560",
+    secondary: "#1A1A2E",
+    text: "#1A1A2E",
+    textMuted: "#6B7280",
+    border: "#E5E7EB",
+    gradient: ["#E94560", "#1A1A2E"],
+    chart: ["#E94560", "#1A1A2E", "#0F3460", "#9CA3AF"]
+  },
+  fonts: {
+    heading: "'IBM Plex Sans', sans-serif",
+    body: "'IBM Plex Sans', sans-serif",
+    mono: "'IBM Plex Mono', monospace"
+  },
+  timing: {
+    spring: { damping: 25, stiffness: 150, mass: 1 },
+    stagger: 4,
+    transitionDuration: 0.5
+  },
+  effects: {
+    particles: false,
+    gradientBg: false,
+    motionBlur: false,
+    grain: 0
+  }
+};
+var animeGhibli = {
+  name: "anime-ghibli",
+  colors: {
+    background: "#0A0A1A",
+    surface: "#1A2332",
+    primary: "#FFB347",
+    secondary: "#2D5016",
+    text: "#F0E6D3",
+    textMuted: "#A8957E",
+    border: "#2A3A4A",
+    gradient: ["#FFB347", "#2D5016"],
+    chart: ["#FFB347", "#2D5016", "#FF6B9D", "#A8E6CF", "#6B4C8A", "#E8927C"]
+  },
+  fonts: {
+    heading: "'Noto Serif JP', 'Georgia', serif",
+    body: "'Noto Sans', 'Inter', sans-serif",
+    mono: "'Fira Code', monospace"
+  },
+  timing: {
+    spring: { damping: 15, stiffness: 100, mass: 1 },
+    stagger: 5,
+    transitionDuration: 0.6
+  },
+  effects: {
+    particles: true,
+    gradientBg: true,
+    motionBlur: false,
+    grain: 0.03
+  }
+};
 var themePresets = {
   cinematic,
   minimal,
   neon,
-  corporate
+  corporate,
+  "clean-professional": cleanProfessional,
+  "flat-motion-graphics": flatMotionGraphics,
+  "minimalist-diagram": minimalistDiagram,
+  "anime-ghibli": animeGhibli
 };
 
 // node_modules/zod/v4/classic/external.js
@@ -41819,7 +41951,9 @@ var themeSchema = external_exports.object({
     secondary: external_exports.string().default("#ec4899"),
     text: external_exports.string().default("#fafafa"),
     textMuted: external_exports.string().default("#a1a1aa"),
-    gradient: external_exports.tuple([external_exports.string(), external_exports.string()]).default(["#f97316", "#ec4899"])
+    border: external_exports.string().default("#27272a"),
+    gradient: external_exports.tuple([external_exports.string(), external_exports.string()]).default(["#f97316", "#ec4899"]),
+    chart: external_exports.array(external_exports.string()).default(["#f97316", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"])
   }),
   fonts: external_exports.object({
     heading: external_exports.string().default("'SF Pro Display', 'Inter', sans-serif"),
@@ -41870,7 +42004,7 @@ function resolveTheme(input) {
 }
 
 // src/types/Folder.tsx
-var React39 = __toESM(require_react(), 1);
+var React41 = __toESM(require_react(), 1);
 
 // node_modules/@remotion/transitions/dist/esm/index.mjs
 var import_react113 = __toESM(require_react(), 1);
@@ -44153,6 +44287,29 @@ function getDurationInSeconds(stream2, update = true) {
   if (stream2.type === "rhythm") {
     return stream2.durationInSeconds ?? 0;
   }
+  if (stream2.type === "include") {
+    if (stream2.src) {
+      const last = stream2.actions?.[stream2.actions.length - 1];
+      const d = last?.end ?? 0;
+      if (update) stream2.durationInSeconds = d;
+      return d;
+    }
+    const children = stream2.children ?? [];
+    if (children.length && update) {
+      for (const child of children) {
+        getDurationInSeconds(child, update);
+      }
+    }
+    const visible2 = children.filter((c2) => !c2.isBackground);
+    let total2 = 0;
+    for (const c2 of visible2) {
+      const d = c2.durationInSeconds ?? 0;
+      if (d > total2) total2 = d;
+    }
+    }
+    if (update) stream2.durationInSeconds = total2;
+    return total2;
+  }
   if (!stream2.children?.length) {
     const last = stream2.actions?.[stream2.actions.length - 1];
     const d = last?.end ?? 0;
@@ -44855,8 +45012,94 @@ function MapLeaf({ stream: stream2 }) {
   }) });
 }
 
-// src/types/Effect.tsx
+// src/types/Include.tsx
 var React35 = __toESM(require_react(), 1);
+var import_jsx_runtime85 = __toESM(require_jsx_runtime(), 1);
+function IncludeLeaf({ stream: stream2 }) {
+  const { fps: parentFps, width: parentWidth, height: parentHeight } = useVideoConfig();
+  const { Container } = React35.useContext(ComposeContext);
+  const parentAudio = React35.useContext(AudioContext2);
+  if (!stream2.actions?.length) return null;
+  const [externalData, setExternalData] = React35.useState(null);
+  const [loadError, setLoadError] = React35.useState(null);
+  const [handle] = React35.useState(() =>
+    stream2.src ? delayRender(`Loading include: ${stream2.src}`) : null
+  );
+  React35.useEffect(() => {
+    if (!stream2.src || !handle) return;
+    let active = true;
+    const url = stream2.src.startsWith("http://") || stream2.src.startsWith("https://") || stream2.src.startsWith("data:") || stream2.src.startsWith("/") ? stream2.src : (0, import_static_file.default)(stream2.src);
+    fetch(url).then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${stream2.src}`);
+      return res.json();
+    }).then((data) => {
+      if (!active) return;
+      const streamTree = data.root ?? data;
+      getDurationInSeconds(streamTree, true);
+      setExternalData(data);
+      continueRender(handle);
+    }).catch((err) => {
+      if (!active) return;
+      const msg = err instanceof Error ? err.message : String(err);
+      setLoadError(msg);
+      continueRender(handle);
+    });
+    return () => { active = false; };
+  }, [stream2.src, handle]);
+  React35.useMemo(() => {
+    if (!stream2.src) {
+      getDurationInSeconds(stream2, true);
+    }
+  }, [stream2, stream2.src]);
+  const audioCtx = React35.useMemo(
+    () => ({ id: stream2.id, foreground: true, parent: parentAudio }),
+    [stream2.id, parentAudio]
+  );
+  const renderExternalContent = React35.useCallback(() => {
+    if (!externalData) return null;
+    if (loadError) {
+      return /* @__PURE__ */ (0, import_jsx_runtime85.jsx)("div", { style: { color: "#ff4444", fontSize: 24, padding: 40 }, children: `\u26A0 Include load error: ${loadError}` });
+    }
+    const isSceneBased = (data) => data && typeof data === "object" && typeof data.meta === "object" && data.meta !== null && Array.isArray(data.scenes);
+    if (isSceneBased(externalData)) {
+      const vj = externalData;
+      const vjFps = vj.meta.fps ?? parentFps;
+      const ASPECT_DIMS = { "16x9": { width: 1920, height: 1080 }, "9x16": { width: 1080, height: 1920 }, "1x1": { width: 1080, height: 1080 } };
+      const aspectKey = vj.meta.aspects?.[0] ?? "16x9";
+      const dims = ASPECT_DIMS[aspectKey] ?? { width: parentWidth, height: parentHeight };
+      return /* @__PURE__ */ (0, import_jsx_runtime85.jsx)("div", { style: { backgroundColor: "#0a0a0a", width: dims.width, height: dims.height, position: "absolute", inset: 0 }, children: [
+        vj.bgm && /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(Audio, { src: vj.bgm.src, volume: vj.bgm.baseVolume }),
+        vj.scenes.map((scene) => {
+          const startFrame = Math.round((scene.start ?? 0) * vjFps);
+          const durFrames = Math.round((scene.duration ?? 1) * vjFps);
+          return /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(Sequence, { from: startFrame, durationInFrames: durFrames, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime85.jsx)("div", { style: { backgroundColor: "#0c0c0e", position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 60, flexDirection: "column" }, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime85.jsx)("div", { style: { color: "#fafafa", fontSize: 48, fontWeight: 800, fontFamily: "Inter, system-ui, sans-serif", textAlign: "center", marginBottom: 16 }, children: scene.props?.headline ?? scene.id }),
+              scene.props?.subhead && /* @__PURE__ */ (0, import_jsx_runtime85.jsx)("div", { style: { color: "#a1a1aa", fontSize: 28, fontFamily: "Inter, system-ui, sans-serif", textAlign: "center" }, children: scene.props.subhead })
+            ] }),
+            scene.voiceover?.audio && /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(Audio, { src: scene.voiceover.audio, volume: 1 })
+          ] }, scene.id);
+        })
+      ] });
+    }
+    const streamTree = externalData.root ?? externalData;
+    const merged = { ...streamTree, width: streamTree.width ?? parentWidth, height: streamTree.height ?? parentHeight, fps: streamTree.fps ?? parentFps };
+    return /* @__PURE__ */ (0, import_jsx_runtime85.jsx)("div", { style: { width: merged.width, height: merged.height, overflow: "hidden", position: "relative" }, children: /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(FolderLeaf, { stream: merged }) });
+  }, [externalData, loadError, parentFps, parentWidth, parentHeight]);
+  return /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(AudioContext2.Provider, { value: audioCtx, children: stream2.actions.map((a2) => {
+    const start = a2.start ?? 0;
+    const end = a2.end ?? (stream2.durationInSeconds ?? start + 1);
+    const dur = Math.max(0.1, end - start);
+    const durFrames = Math.max(1, Math.floor(parentFps * dur));
+    if (!stream2.src && stream2.children?.length) {
+      return /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(Sequence, { durationInFrames: durFrames, from: Math.floor(parentFps * start), layout: "none", showInTimeline: false, children: /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(Container, { id: stream2.id, type: "include", style: { ...cssJS(stream2.style), width: parentWidth, height: parentHeight, overflow: "hidden", position: "relative" }, className: `include ${toClassName(stream2.name ?? "")}`, children: /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(FolderLeaf, { stream: stream2 }) }) }, a2.id);
+    }
+    return /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(Sequence, { durationInFrames: durFrames, from: Math.floor(parentFps * start), layout: "none", showInTimeline: false, children: externalData || loadError ? /* @__PURE__ */ (0, import_jsx_runtime85.jsx)("div", { style: { width: parentWidth, height: parentHeight, overflow: "hidden", position: "relative" }, children: renderExternalContent() }) : /* @__PURE__ */ (0, import_jsx_runtime85.jsx)("div", { style: { width: parentWidth, height: parentHeight, display: "flex", alignItems: "center", justifyContent: "center", color: "#666", fontSize: 20, fontFamily: "monospace" }, children: `Loading\u2026 ${stream2.src}` }) }, a2.id);
+  }) });
+}
+
+// src/types/Effect.tsx
+var React39 = __toESM(require_react(), 1);
 
 // src/types/keyframes.ts
 function parseKeyframeData(data) {
@@ -45095,7 +45338,7 @@ var builtinAnimations = {
 };
 
 // src/types/Effect.tsx
-var import_jsx_runtime85 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime86 = __toESM(require_jsx_runtime(), 1);
 function EffectWrapper({
   stream: stream2,
   children
@@ -45103,7 +45346,7 @@ function EffectWrapper({
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const actions = stream2.actions ?? [];
-  const styles = React35.useMemo(() => {
+  const styles = React39.useMemo(() => {
     const result = [];
     for (const action2 of actions) {
       const start = Math.ceil(action2.start * fps);
@@ -45141,8 +45384,8 @@ function EffectWrapper({
     }
     return result;
   }, [frame, fps, actions, stream2.animation, stream2.animationTimingFunction, stream2.animationIterationCount, stream2.customKeyframes]);
-  if (styles.length === 0) return /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(import_jsx_runtime85.Fragment, { children });
-  return /* @__PURE__ */ (0, import_jsx_runtime85.jsx)(
+  if (styles.length === 0) return /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(import_jsx_runtime86.Fragment, { children });
+  return /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(
     "div",
     {
       style: Object.assign({ width, height, position: "absolute", inset: 0 }, ...styles),
@@ -45153,7 +45396,7 @@ function EffectWrapper({
 }
 
 // src/types/Folder.tsx
-var import_jsx_runtime86 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime87 = __toESM(require_jsx_runtime(), 1);
 var Leaves = {
   video: VideoLeaf,
   audio: AudioLeaf,
@@ -45161,7 +45404,8 @@ var Leaves = {
   subtitle: SubtitleLeaf,
   component: ComponentLeaf,
   rhythm: RhythmLeaf,
-  map: MapLeaf
+  map: MapLeaf,
+  include: IncludeLeaf
 };
 var TransitionPresets = {
   fade,
@@ -45170,26 +45414,26 @@ var TransitionPresets = {
   flip,
   clockWipe
 };
-var NotSeries = ({ children }) => /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(import_jsx_runtime86.Fragment, { children });
-NotSeries.Sequence = ({ children }) => /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(import_jsx_runtime86.Fragment, { children });
+var NotSeries = ({ children }) => /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(import_jsx_runtime87.Fragment, { children });
+NotSeries.Sequence = ({ children }) => /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(import_jsx_runtime87.Fragment, { children });
 function FolderLeaf({ stream: stream2 }) {
   const { fps, width, height } = useVideoConfig();
-  const { Container } = React39.useContext(ComposeContext);
-  const parentAudio = React39.useContext(AudioContext2);
+  const { Container } = React41.useContext(ComposeContext);
+  const parentAudio = React41.useContext(AudioContext2);
   const isSeries = !!stream2.isSeries;
   const transition = stream2.transition;
   const transitionTime = stream2.transitionTime ?? 0.5;
   const isRoot = stream2.id === "root";
-  const TypedSeries = React39.useMemo(() => {
+  const TypedSeries = React41.useMemo(() => {
     if (!isSeries) return NotSeries;
     return transition ? TransitionSeries : Series;
   }, [isSeries, transition]);
-  const transEl = React39.useMemo(() => {
+  const transEl = React41.useMemo(() => {
     if (!isSeries || !transition) return null;
     const presentation = TransitionPresets[transition]?.(
       transition === "clockWipe" ? { width, height } : void 0
     );
-    return /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(
       TransitionSeries.Transition,
       {
         presentation,
@@ -45203,8 +45447,8 @@ function FolderLeaf({ stream: stream2 }) {
     const durFrames = Math.max(1, Math.floor(dur * fps));
     const SequenceWrap = TypedSeries.Sequence ?? Sequence;
     const isLeaf = child.type !== "folder" && child.type !== "root" && child.type !== "effect";
-    const childContent = isLeaf ? React39.createElement(Leaves[child.type] ?? (() => null), { stream: child }) : child.type === "effect" ? /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(EffectWrapper, { stream: child, children: /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(FolderLeaf, { stream: child }) }) : React39.createElement(FolderLeaf, { stream: child });
-    const wrapped = child.type === "subtitle" ? childContent : /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(
+    const childContent = isLeaf ? React41.createElement(Leaves[child.type] ?? (() => null), { stream: child }) : child.type === "effect" ? /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(EffectWrapper, { stream: child, children: /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(FolderLeaf, { stream: child }) }) : React41.createElement(FolderLeaf, { stream: child });
+    const wrapped = child.type === "subtitle" ? childContent : /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(
       Container,
       {
         id: child.id,
@@ -45214,35 +45458,35 @@ function FolderLeaf({ stream: stream2 }) {
         children: childContent
       }
     );
-    const seq = /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(SequenceWrap, { durationInFrames: durFrames, layout: "none", children: wrapped }, child.id);
+    const seq = /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(SequenceWrap, { durationInFrames: durFrames, layout: "none", children: wrapped }, child.id);
     if (child.isBackground && stream2.durationInSeconds) {
       const times = Math.max(1, Math.ceil(stream2.durationInSeconds * fps / durFrames));
-      return /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(Loop, { durationInFrames: durFrames, times, showInTimeline: false, children: wrapped }, child.id);
+      return /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(Loop, { durationInFrames: durFrames, times, showInTimeline: false, children: wrapped }, child.id);
     }
     return seq;
   }).filter(Boolean);
   if (isSeries && transEl) {
     for (let i = 1; i < sequences.length; i += 2) {
-      sequences.splice(i, 0, React39.cloneElement(transEl, { key: `t${i}` }));
+      sequences.splice(i, 0, React41.cloneElement(transEl, { key: `t${i}` }));
     }
   }
-  const audioCtx = React39.useMemo(
+  const audioCtx = React41.useMemo(
     () => stream2.type !== "folder" ? { id: stream2.id, parent: parentAudio } : parentAudio,
     [stream2.id, stream2.type, parentAudio]
   );
   if (visibleChildren.length === 0 || stream2.visible === false) return null;
   const containerStyle3 = cssJS(stream2.style);
   const orientation = isRoot ? width > height ? "landscape" : "portrait" : "";
-  return /* @__PURE__ */ (0, import_jsx_runtime86.jsxs)(AudioContext2.Provider, { value: audioCtx, children: [
-    stream2.stylesheet ? /* @__PURE__ */ (0, import_jsx_runtime86.jsx)("style", { children: stream2.stylesheet }) : null,
-    /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime87.jsxs)(AudioContext2.Provider, { value: audioCtx, children: [
+    stream2.stylesheet ? /* @__PURE__ */ (0, import_jsx_runtime87.jsx)("style", { children: stream2.stylesheet }) : null,
+    /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(
       Container,
       {
         id: stream2.id,
         type: stream2.type,
         style: containerStyle3,
         className: `${orientation} ${stream2.type} ${stream2.name ?? ""}`.trim(),
-        children: isSeries ? /* @__PURE__ */ (0, import_jsx_runtime86.jsx)(TypedSeries, { children: sequences }) : sequences
+        children: isSeries ? /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(TypedSeries, { children: sequences }) : sequences
       }
     )
   ] });
@@ -45356,6 +45600,13 @@ var rhythm = base.extend({
   children: external_exports.array(external_exports.lazy(() => stream)).default(() => []),
   actions: external_exports.array(action).min(1).default(() => [action.parse({})])
 });
+var include = base.extend({
+  type: external_exports.literal("include").default("include"),
+  src: external_exports.string().optional().describe("path or URL to video JSON file (stream tree or scene-based)"),
+  volume: external_exports.number().min(0).max(1).default(1),
+  children: external_exports.array(external_exports.lazy(() => stream)).default(() => []),
+  actions: external_exports.array(action).min(1).default(() => [action.parse({})])
+});
 var mapWaypoint = external_exports.object({
   lat: external_exports.number(),
   lng: external_exports.number(),
@@ -45381,20 +45632,21 @@ var stream = external_exports.discriminatedUnion("type", [
   component,
   effect,
   rhythm,
-  mapStream
+  mapStream,
+  include
 ]);
 
 // src/lite.entry.tsx
-var import_jsx_runtime87 = __toESM(require_jsx_runtime(), 1);
-var DefaultContainer2 = ({ children, style: style2, className: className2 }) => /* @__PURE__ */ (0, import_jsx_runtime87.jsx)("div", { className: className2, style: { position: "absolute", inset: 0, ...style2 }, children });
+var import_jsx_runtime88 = __toESM(require_jsx_runtime(), 1);
+var DefaultContainer2 = ({ children, style: style2, className: className2 }) => /* @__PURE__ */ (0, import_jsx_runtime88.jsx)("div", { className: className2, style: { position: "absolute", inset: 0, ...style2 }, children });
 function RemotionEngine({ root: root2, compose, background = "#000", theme }) {
-  const parsed = React41.useMemo(() => root.parse(root2), [root2]);
-  React41.useMemo(() => getDurationInSeconds(parsed, true), [parsed]);
-  const resolvedTheme = React41.useMemo(
+  const parsed = React43.useMemo(() => root.parse(root2), [root2]);
+  React43.useMemo(() => getDurationInSeconds(parsed, true), [parsed]);
+  const resolvedTheme = React43.useMemo(
     () => resolveTheme(theme ?? root2?.theme),
     [theme, root2]
   );
-  const value = React41.useMemo(
+  const value = React43.useMemo(
     () => ({
       Container: compose?.Container ?? DefaultContainer2,
       components: compose?.components ?? {},
@@ -45402,12 +45654,12 @@ function RemotionEngine({ root: root2, compose, background = "#000", theme }) {
     }),
     [compose]
   );
-  return /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(ComposeContext.Provider, { value, children: /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(ThemeProvider, { theme: resolvedTheme, children: /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(AbsoluteFill, { style: { background: background || resolvedTheme.colors.background }, children: /* @__PURE__ */ (0, import_jsx_runtime87.jsx)(FolderLeaf, { stream: parsed }) }) }) });
+  return /* @__PURE__ */ (0, import_jsx_runtime88.jsx)(ComposeContext.Provider, { value, children: /* @__PURE__ */ (0, import_jsx_runtime88.jsx)(ThemeProvider, { theme: resolvedTheme, children: /* @__PURE__ */ (0, import_jsx_runtime88.jsx)(AbsoluteFill, { style: { background: background || resolvedTheme.colors.background }, children: /* @__PURE__ */ (0, import_jsx_runtime88.jsx)(FolderLeaf, { stream: parsed }) }) }) });
 }
 
 // src/components/text/AnimatedHeadline.tsx
-var React43 = __toESM(require_react(), 1);
-var import_jsx_runtime88 = __toESM(require_jsx_runtime(), 1);
+var React44 = __toESM(require_react(), 1);
+var import_jsx_runtime89 = __toESM(require_jsx_runtime(), 1);
 function AnimatedHeadline({
   text,
   subtext,
@@ -45419,13 +45671,13 @@ function AnimatedHeadline({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const theme = useTheme();
-  const parts = React43.useMemo(() => {
+  const parts = React44.useMemo(() => {
     if (split === "char") return text.split("");
     if (split === "line") return text.split("\n");
     return text.split(/\s+/);
   }, [text, split]);
   const separator = split === "char" ? "" : " ";
-  return /* @__PURE__ */ (0, import_jsx_runtime88.jsxs)(
+  return /* @__PURE__ */ (0, import_jsx_runtime89.jsxs)(
     "div",
     {
       style: {
@@ -45438,7 +45690,7 @@ function AnimatedHeadline({
         padding: "5%"
       },
       children: [
-        glow && /* @__PURE__ */ (0, import_jsx_runtime88.jsx)(
+        glow && /* @__PURE__ */ (0, import_jsx_runtime89.jsx)(
           "div",
           {
             style: {
@@ -45454,7 +45706,7 @@ function AnimatedHeadline({
             }
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime88.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime89.jsx)(
           "div",
           {
             style: {
@@ -45489,7 +45741,7 @@ function AnimatedHeadline({
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text"
               } : { color: theme.colors.text };
-              return /* @__PURE__ */ (0, import_jsx_runtime88.jsxs)(
+              return /* @__PURE__ */ (0, import_jsx_runtime89.jsxs)(
                 "span",
                 {
                   style: {
@@ -45513,7 +45765,7 @@ function AnimatedHeadline({
             })
           }
         ),
-        subtext && /* @__PURE__ */ (0, import_jsx_runtime88.jsx)(
+        subtext && /* @__PURE__ */ (0, import_jsx_runtime89.jsx)(
           "div",
           {
             style: {
@@ -45546,7 +45798,7 @@ function AnimatedHeadline({
             fps,
             config: { damping: 20, stiffness: 300, mass: 0.5 }
           });
-          return /* @__PURE__ */ (0, import_jsx_runtime88.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime89.jsx)(
             "div",
             {
               style: {
@@ -45568,7 +45820,7 @@ function AnimatedHeadline({
 }
 
 // src/components/text/TypewriterText.tsx
-var import_jsx_runtime89 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime90 = __toESM(require_jsx_runtime(), 1);
 function TypewriterText({
   text,
   cursor = true,
@@ -45582,7 +45834,7 @@ function TypewriterText({
   const displayText = text.slice(0, Math.min(charsToShow, text.length));
   const done = charsToShow >= text.length;
   const cursorOpacity = done ? frame / fps % 1 < 0.5 ? 1 : 0 : 1;
-  return /* @__PURE__ */ (0, import_jsx_runtime89.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime90.jsx)(
     "div",
     {
       style: {
@@ -45593,7 +45845,7 @@ function TypewriterText({
         justifyContent: "center",
         padding: "8%"
       },
-      children: /* @__PURE__ */ (0, import_jsx_runtime89.jsxs)(
+      children: /* @__PURE__ */ (0, import_jsx_runtime90.jsxs)(
         "div",
         {
           style: {
@@ -45606,7 +45858,7 @@ function TypewriterText({
           },
           children: [
             displayText,
-            cursor && /* @__PURE__ */ (0, import_jsx_runtime89.jsx)(
+            cursor && /* @__PURE__ */ (0, import_jsx_runtime90.jsx)(
               "span",
               {
                 style: {
@@ -45624,7 +45876,7 @@ function TypewriterText({
 }
 
 // src/components/text/GlitchReveal.tsx
-var import_jsx_runtime90 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime91 = __toESM(require_jsx_runtime(), 1);
 function GlitchReveal({
   text,
   intensity = 0.7
@@ -45649,7 +45901,7 @@ function GlitchReveal({
     return char === " " ? " " : glitchChars[randIdx % glitchChars.length];
   });
   const splitAmount = glitchActive ? intensity * 3 * (1 - revealProg) : 0;
-  return /* @__PURE__ */ (0, import_jsx_runtime90.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(
     "div",
     {
       style: {
@@ -45660,8 +45912,8 @@ function GlitchReveal({
         justifyContent: "center",
         padding: "5%"
       },
-      children: /* @__PURE__ */ (0, import_jsx_runtime90.jsxs)("div", { style: { position: "relative" }, children: [
-        splitAmount > 0 && /* @__PURE__ */ (0, import_jsx_runtime90.jsx)(
+      children: /* @__PURE__ */ (0, import_jsx_runtime91.jsxs)("div", { style: { position: "relative" }, children: [
+        splitAmount > 0 && /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(
           "div",
           {
             style: {
@@ -45677,7 +45929,7 @@ function GlitchReveal({
             children: chars?.join("")
           }
         ),
-        splitAmount > 0 && /* @__PURE__ */ (0, import_jsx_runtime90.jsx)(
+        splitAmount > 0 && /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(
           "div",
           {
             style: {
@@ -45693,7 +45945,7 @@ function GlitchReveal({
             children: chars?.join("")
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime90.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(
           "div",
           {
             style: {
@@ -45712,10 +45964,254 @@ function GlitchReveal({
   );
 }
 
+// src/components/text/TextCard.tsx
+var import_jsx_runtime92 = __toESM(require_jsx_runtime(), 1);
+function TextCard({
+  text,
+  subtext,
+  align = "center",
+  backgroundColor,
+  textColor,
+  animation = "fade"
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const theme = useTheme();
+  const bg = backgroundColor || theme.colors.surface;
+  const color = textColor || theme.colors.text;
+  const entrance = spring({
+    frame,
+    fps,
+    config: { damping: 20, stiffness: 120, mass: 1 }
+  });
+  let transform2 = "";
+  let opacity2 = entrance;
+  if (animation === "slide-up") {
+    transform2 = `translateY(${(1 - entrance) * 40}px)`;
+  } else if (animation === "scale") {
+    transform2 = `scale(${0.8 + 0.2 * entrance})`;
+  } else if (animation === "none") {
+    opacity2 = 1;
+    transform2 = "none";
+  }
+  const textAlign = align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center";
+  return /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)("div", { style: {
+    position: "absolute",
+    inset: 0,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: textAlign,
+    justifyContent: "center",
+    padding: "8%",
+    background: bg,
+    opacity: opacity2,
+    transform: transform2
+  }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime92.jsx)("div", { style: {
+      fontFamily: theme.fonts.heading,
+      fontSize: "3.5em",
+      fontWeight: 700,
+      lineHeight: 1.2,
+      color,
+      textAlign: align,
+      maxWidth: "80%"
+    }, children: text }),
+    subtext && /* @__PURE__ */ (0, import_jsx_runtime92.jsx)("div", { style: {
+      fontFamily: theme.fonts.body,
+      fontSize: "1.5em",
+      color: theme.colors.textMuted,
+      marginTop: "0.5em",
+      textAlign: align,
+      opacity: interpolate(frame, [fps * 0.3, fps * 0.6], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+      transform: `translateY(${interpolate(frame, [fps * 0.3, fps * 0.6], [15, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}px)`
+    }, children: subtext })
+  ] });
+}
+
+// src/components/text/CalloutBox.tsx
+var import_jsx_runtime93 = __toESM(require_jsx_runtime(), 1);
+var TYPE_COLORS = {
+  info: { accent: "#3B82F6", bg: "#EFF6FF" },
+  warning: { accent: "#F59E0B", bg: "#FFFBEB" },
+  tip: { accent: "#10B981", bg: "#ECFDF5" },
+  quote: { accent: "#8B5CF6", bg: "#F5F3FF" }
+};
+var TYPE_ICONS = {
+  info: "i",
+  warning: "!",
+  tip: "\u2713",
+  quote: "\u201C"
+};
+function CalloutBox({
+  text,
+  type = "info",
+  icon,
+  author
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const theme = useTheme();
+  const colors = TYPE_COLORS[type] ?? TYPE_COLORS.info;
+  const displayIcon = icon || TYPE_ICONS[type] || "";
+  const slideIn = spring({
+    frame,
+    fps,
+    config: { damping: 15, stiffness: 120, mass: 0.8 }
+  });
+  const accentDraw = spring({
+    frame: frame - 5,
+    fps,
+    config: { damping: 20, stiffness: 150, mass: 0.5 }
+  });
+  return /* @__PURE__ */ (0, import_jsx_runtime93.jsx)("div", { style: {
+    position: "absolute",
+    inset: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "10%",
+    transform: `translateX(${(1 - slideIn) * 30}px)`,
+    opacity: slideIn
+  }, children: /* @__PURE__ */ (0, import_jsx_runtime93.jsxs)("div", { style: {
+    display: "flex",
+    gap: 24,
+    background: colors.bg,
+    borderRadius: 16,
+    padding: "2em 2.5em",
+    maxWidth: "70%",
+    boxShadow: `0 4px 20px ${theme.colors.primary}15`,
+    position: "relative",
+    overflow: "hidden"
+  }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime93.jsx)("div", { style: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 4,
+      background: colors.accent,
+      transform: `scaleY(${accentDraw})`,
+      transformOrigin: "top"
+    } }),
+    /* @__PURE__ */ (0, import_jsx_runtime93.jsx)("div", { style: {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      background: colors.accent,
+      color: "#fff",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: theme.fonts.heading,
+      fontSize: "1.5em",
+      fontWeight: 700,
+      flexShrink: 0
+    }, children: displayIcon }),
+    /* @__PURE__ */ (0, import_jsx_runtime93.jsxs)("div", { style: { flex: 1 }, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime93.jsx)("div", { style: {
+        fontFamily: type === "quote" ? theme.fonts.heading : theme.fonts.body,
+        fontSize: type === "quote" ? "1.8em" : "1.4em",
+        fontStyle: type === "quote" ? "italic" : "normal",
+        color: theme.colors.text,
+        lineHeight: 1.4
+      }, children: text }),
+      author && /* @__PURE__ */ (0, import_jsx_runtime93.jsxs)("div", { style: {
+        fontFamily: theme.fonts.body,
+        fontSize: "1em",
+        color: theme.colors.textMuted,
+        marginTop: "0.8em",
+        opacity: interpolate(frame, [fps * 0.5, fps * 0.8], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+      }, children: [
+        "\u2014 ",
+        author
+      ] })
+    ] })
+  ] }) });
+}
+
+// src/components/text/EndTag.tsx
+var import_jsx_runtime94 = __toESM(require_jsx_runtime(), 1);
+function EndTag({
+  title,
+  subtitle: subtitle2,
+  cta,
+  showShimmer = true
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const theme = useTheme();
+  const entrance = spring({
+    frame,
+    fps,
+    config: { damping: 18, stiffness: 100, mass: 1.2 }
+  });
+  const underlineDraw = spring({
+    frame: frame - fps * 0.3,
+    fps,
+    config: { damping: 20, stiffness: 150 }
+  });
+  const shimmerX = showShimmer ? interpolate(frame, [0, fps * 0.6], [-200, 1200], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : -200;
+  return /* @__PURE__ */ (0, import_jsx_runtime94.jsxs)("div", { style: {
+    position: "absolute",
+    inset: 0,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    background: theme.colors.background,
+    padding: "5%",
+    opacity: entrance,
+    transform: `scale(${0.85 + 0.15 * entrance})`
+  }, children: [
+    subtitle2 && /* @__PURE__ */ (0, import_jsx_runtime94.jsx)("div", { style: {
+      fontFamily: theme.fonts.body,
+      fontSize: "1.2em",
+      color: theme.colors.textMuted,
+      textTransform: "uppercase",
+      letterSpacing: "0.3em",
+      marginBottom: "0.5em",
+      opacity: interpolate(frame, [fps * 0.2, fps * 0.5], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+    }, children: subtitle2 }),
+    /* @__PURE__ */ (0, import_jsx_runtime94.jsxs)("div", { style: { position: "relative", marginBottom: "0.3em" }, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime94.jsx)("div", { style: {
+        fontFamily: theme.fonts.heading,
+        fontSize: "4em",
+        fontWeight: 800,
+        color: theme.colors.text,
+        textAlign: "center",
+        lineHeight: 1.1
+      }, children: title }),
+      /* @__PURE__ */ (0, import_jsx_runtime94.jsx)("div", { style: {
+        height: 4,
+        width: `${underlineDraw * 60}%`,
+        background: `linear-gradient(90deg, ${theme.colors.primary}, ${theme.colors.gradient[1]})`,
+        borderRadius: 2,
+        marginTop: 8,
+        marginLeft: `${(100 - underlineDraw * 60) / 2}%`
+      } })
+    ] }),
+    cta && /* @__PURE__ */ (0, import_jsx_runtime94.jsx)("div", { style: {
+      fontFamily: theme.fonts.body,
+      fontSize: "1.3em",
+      color: theme.colors.primary,
+      marginTop: "0.8em",
+      opacity: interpolate(frame, [fps * 0.6, fps * 0.9], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+      transform: `translateY(${interpolate(frame, [fps * 0.6, fps * 0.9], [15, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}px)`
+    }, children: cta }),
+    showShimmer && /* @__PURE__ */ (0, import_jsx_runtime94.jsx)("div", { style: {
+      position: "absolute",
+      inset: 0,
+      background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)`,
+      transform: `translateX(${shimmerX}px)`,
+      pointerEvents: "none"
+    } })
+  ] });
+}
+
 // src/components/media/DeviceMockup.tsx
-var import_jsx_runtime91 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime95 = __toESM(require_jsx_runtime(), 1);
 function BrowserChrome({ title, theme }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime91.jsxs)(
+  return /* @__PURE__ */ (0, import_jsx_runtime95.jsxs)(
     "div",
     {
       style: {
@@ -45729,12 +46225,12 @@ function BrowserChrome({ title, theme }) {
         borderTopRightRadius: 12
       },
       children: [
-        /* @__PURE__ */ (0, import_jsx_runtime91.jsxs)("div", { style: { display: "flex", gap: 6 }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime91.jsx)("div", { style: { width: 12, height: 12, borderRadius: "50%", background: "#ff5f57" } }),
-          /* @__PURE__ */ (0, import_jsx_runtime91.jsx)("div", { style: { width: 12, height: 12, borderRadius: "50%", background: "#febc2e" } }),
-          /* @__PURE__ */ (0, import_jsx_runtime91.jsx)("div", { style: { width: 12, height: 12, borderRadius: "50%", background: "#28c840" } })
+        /* @__PURE__ */ (0, import_jsx_runtime95.jsxs)("div", { style: { display: "flex", gap: 6 }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime95.jsx)("div", { style: { width: 12, height: 12, borderRadius: "50%", background: "#ff5f57" } }),
+          /* @__PURE__ */ (0, import_jsx_runtime95.jsx)("div", { style: { width: 12, height: 12, borderRadius: "50%", background: "#febc2e" } }),
+          /* @__PURE__ */ (0, import_jsx_runtime95.jsx)("div", { style: { width: 12, height: 12, borderRadius: "50%", background: "#28c840" } })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(
           "div",
           {
             style: {
@@ -45757,7 +46253,7 @@ function BrowserChrome({ title, theme }) {
   );
 }
 function PhoneFrame({ children, theme }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime91.jsxs)(
+  return /* @__PURE__ */ (0, import_jsx_runtime95.jsxs)(
     "div",
     {
       style: {
@@ -45769,7 +46265,7 @@ function PhoneFrame({ children, theme }) {
         overflow: "hidden"
       },
       children: [
-        /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(
           "div",
           {
             style: {
@@ -45786,7 +46282,7 @@ function PhoneFrame({ children, theme }) {
             }
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime91.jsx)("div", { style: { borderRadius: 24, overflow: "hidden" }, children })
+        /* @__PURE__ */ (0, import_jsx_runtime95.jsx)("div", { style: { borderRadius: 24, overflow: "hidden" }, children })
       ]
     }
   );
@@ -45810,7 +46306,7 @@ function DeviceMockup({
   const translateY = 40 * (1 - entrance);
   const opacity2 = entrance;
   const perspective = angle > 0 ? `perspective(1200px) rotateY(${angle * (1 - entrance * 0.5)}deg)` : "";
-  const content = /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(
+  const content = /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(
     Img,
     {
       src,
@@ -45823,7 +46319,7 @@ function DeviceMockup({
     }
   );
   const maxWidth = device === "phone" ? "35%" : device === "tablet" ? "55%" : "80%";
-  return /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(
     "div",
     {
       style: {
@@ -45833,7 +46329,7 @@ function DeviceMockup({
         alignItems: "center",
         justifyContent: "center"
       },
-      children: /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(
+      children: /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(
         "div",
         {
           style: {
@@ -45843,7 +46339,7 @@ function DeviceMockup({
             opacity: opacity2,
             filter: shadow ? `drop-shadow(0 25px 60px rgba(0,0,0,0.5))` : void 0
           },
-          children: device === "phone" ? /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(PhoneFrame, { theme, children: content }) : /* @__PURE__ */ (0, import_jsx_runtime91.jsxs)(
+          children: device === "phone" ? /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(PhoneFrame, { theme, children: content }) : /* @__PURE__ */ (0, import_jsx_runtime95.jsxs)(
             "div",
             {
               style: {
@@ -45852,8 +46348,8 @@ function DeviceMockup({
                 border: `1px solid ${theme.colors.surface}`
               },
               children: [
-                device === "browser" && /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(BrowserChrome, { title, theme }),
-                device === "laptop" && /* @__PURE__ */ (0, import_jsx_runtime91.jsx)(BrowserChrome, { title, theme }),
+                device === "browser" && /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(BrowserChrome, { title, theme }),
+                device === "laptop" && /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(BrowserChrome, { title, theme }),
                 content
               ]
             }
@@ -45865,10 +46361,10 @@ function DeviceMockup({
 }
 
 // src/components/media/CursorFlyover.tsx
-var React44 = __toESM(require_react(), 1);
-var import_jsx_runtime92 = __toESM(require_jsx_runtime(), 1);
+var React45 = __toESM(require_react(), 1);
+var import_jsx_runtime96 = __toESM(require_jsx_runtime(), 1);
 function CursorSVG({ color }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime92.jsx)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime96.jsx)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
     "path",
     {
       d: "M5 3L19 12L12 12L8 19L5 3Z",
@@ -45883,7 +46379,7 @@ function CursorFlyover({ src, steps }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const theme = useTheme();
-  const timings = React44.useMemo(() => {
+  const timings = React45.useMemo(() => {
     let acc = 0;
     return steps.map((s) => {
       const start = acc;
@@ -45923,7 +46419,7 @@ function CursorFlyover({ src, steps }) {
     fps,
     config: { damping: 12, stiffness: 200, mass: 0.5 }
   });
-  return /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)(
+  return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
     "div",
     {
       style: {
@@ -45933,7 +46429,7 @@ function CursorFlyover({ src, steps }) {
         borderRadius: 12
       },
       children: [
-        /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "div",
           {
             style: {
@@ -45943,7 +46439,7 @@ function CursorFlyover({ src, steps }) {
               transformOrigin: "center center",
               transition: "none"
             },
-            children: /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
               Img,
               {
                 src,
@@ -45956,7 +46452,7 @@ function CursorFlyover({ src, steps }) {
             )
           }
         ),
-        step.cursor && /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)(
+        step.cursor && /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)(
           "div",
           {
             style: {
@@ -45968,8 +46464,8 @@ function CursorFlyover({ src, steps }) {
               filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
             },
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(CursorSVG, { color: theme.colors.primary }),
-              clickProg > 0 && clickProg < 0.95 && /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(CursorSVG, { color: theme.colors.primary }),
+              clickProg > 0 && clickProg < 0.95 && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
                 "div",
                 {
                   style: {
@@ -45988,7 +46484,7 @@ function CursorFlyover({ src, steps }) {
             ]
           }
         ),
-        step.annotation && /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(
+        step.annotation && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
           "div",
           {
             style: {
@@ -46022,7 +46518,7 @@ function CursorFlyover({ src, steps }) {
 }
 
 // src/components/media/ComparisonSlider.tsx
-var import_jsx_runtime93 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime97 = __toESM(require_jsx_runtime(), 1);
 function ComparisonSlider({
   before,
   after,
@@ -46045,7 +46541,7 @@ function ComparisonSlider({
     config: { damping: 20, stiffness: 80, mass: 1.5 }
   });
   const dividerPos = interpolate(slideProg, [0, 1], [dividerStart, dividerEnd]);
-  return /* @__PURE__ */ (0, import_jsx_runtime93.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
     "div",
     {
       style: {
@@ -46057,7 +46553,7 @@ function ComparisonSlider({
         opacity: entrance,
         transform: `scale(${0.9 + 0.1 * entrance})`
       },
-      children: /* @__PURE__ */ (0, import_jsx_runtime93.jsxs)(
+      children: /* @__PURE__ */ (0, import_jsx_runtime97.jsxs)(
         "div",
         {
           style: {
@@ -46069,7 +46565,7 @@ function ComparisonSlider({
             boxShadow: "0 20px 60px rgba(0,0,0,0.4)"
           },
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime93.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
               Img,
               {
                 src: after,
@@ -46082,7 +46578,7 @@ function ComparisonSlider({
                 }
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime93.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
               "div",
               {
                 style: {
@@ -46092,7 +46588,7 @@ function ComparisonSlider({
                   height: "100%",
                   clipPath: `inset(0 ${(1 - dividerPos) * 100}% 0 0)`
                 },
-                children: /* @__PURE__ */ (0, import_jsx_runtime93.jsx)(
+                children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
                   Img,
                   {
                     src: before,
@@ -46105,7 +46601,7 @@ function ComparisonSlider({
                 )
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime93.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
               "div",
               {
                 style: {
@@ -46121,7 +46617,7 @@ function ComparisonSlider({
                 }
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime93.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
               "div",
               {
                 style: {
@@ -46139,10 +46635,10 @@ function ComparisonSlider({
                   zIndex: 3,
                   boxShadow: "0 2px 10px rgba(0,0,0,0.3)"
                 },
-                children: /* @__PURE__ */ (0, import_jsx_runtime93.jsx)("span", { style: { color: theme.colors.background, fontSize: 18, fontWeight: 700 }, children: "\u21D4" })
+                children: /* @__PURE__ */ (0, import_jsx_runtime97.jsx)("span", { style: { color: theme.colors.background, fontSize: 18, fontWeight: 700 }, children: "\u21D4" })
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime93.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
               "div",
               {
                 style: {
@@ -46160,7 +46656,7 @@ function ComparisonSlider({
                 children: beforeLabel
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime93.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
               "div",
               {
                 style: {
@@ -46186,7 +46682,7 @@ function ComparisonSlider({
 }
 
 // src/components/data/StatCounter.tsx
-var import_jsx_runtime94 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime98 = __toESM(require_jsx_runtime(), 1);
 function StatCounter({
   value,
   label: label3,
@@ -46209,7 +46705,7 @@ function StatCounter({
     fps,
     config: { damping: 15, stiffness: 180, mass: 0.8 }
   });
-  return /* @__PURE__ */ (0, import_jsx_runtime94.jsxs)(
+  return /* @__PURE__ */ (0, import_jsx_runtime98.jsxs)(
     "div",
     {
       style: {
@@ -46223,7 +46719,7 @@ function StatCounter({
         transform: `scale(${0.8 + 0.2 * entrance})`
       },
       children: [
-        /* @__PURE__ */ (0, import_jsx_runtime94.jsxs)(
+        /* @__PURE__ */ (0, import_jsx_runtime98.jsxs)(
           "div",
           {
             style: {
@@ -46243,7 +46739,7 @@ function StatCounter({
             ]
           }
         ),
-        label3 && /* @__PURE__ */ (0, import_jsx_runtime94.jsx)(
+        label3 && /* @__PURE__ */ (0, import_jsx_runtime98.jsx)(
           "div",
           {
             style: {
@@ -46265,12 +46761,12 @@ function StatCounter({
 }
 
 // src/components/data/ProgressBar.tsx
-var import_jsx_runtime95 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime99 = __toESM(require_jsx_runtime(), 1);
 function ProgressBar({ items }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const theme = useTheme();
-  return /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime99.jsx)(
     "div",
     {
       style: {
@@ -46295,7 +46791,7 @@ function ProgressBar({ items }) {
           fps,
           config: { damping: 15, stiffness: 180, mass: 0.8 }
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime95.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime99.jsxs)(
           "div",
           {
             style: {
@@ -46303,7 +46799,7 @@ function ProgressBar({ items }) {
               transform: `translateX(${(1 - entrance) * 30}px)`
             },
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime95.jsxs)(
+              /* @__PURE__ */ (0, import_jsx_runtime99.jsxs)(
                 "div",
                 {
                   style: {
@@ -46314,15 +46810,15 @@ function ProgressBar({ items }) {
                     fontSize: "1.1em"
                   },
                   children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime95.jsx)("span", { style: { color: theme.colors.text }, children: item.label }),
-                    /* @__PURE__ */ (0, import_jsx_runtime95.jsxs)("span", { style: { color: theme.colors.textMuted }, children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime99.jsx)("span", { style: { color: theme.colors.text }, children: item.label }),
+                    /* @__PURE__ */ (0, import_jsx_runtime99.jsxs)("span", { style: { color: theme.colors.textMuted }, children: [
                       Math.floor(barWidth),
                       "%"
                     ] })
                   ]
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime99.jsx)(
                 "div",
                 {
                   style: {
@@ -46331,7 +46827,7 @@ function ProgressBar({ items }) {
                     borderRadius: 4,
                     overflow: "hidden"
                   },
-                  children: /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(
+                  children: /* @__PURE__ */ (0, import_jsx_runtime99.jsx)(
                     "div",
                     {
                       style: {
@@ -46353,8 +46849,592 @@ function ProgressBar({ items }) {
   );
 }
 
+// src/components/data/BarChart.tsx
+var import_jsx_runtime100 = __toESM(require_jsx_runtime(), 1);
+function BarChart({
+  data,
+  title,
+  colors: customColors,
+  showGrid = true,
+  showValues = true,
+  animationStyle = "grow-up"
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const theme = useTheme();
+  const colors = customColors || theme.colors.chart;
+  const maxValue = Math.max(...data.map((d) => d.value), 1);
+  const chartLeft = 140;
+  const chartRight = 1780;
+  const chartTop = title ? 160 : 80;
+  const chartBottom = 920;
+  const chartWidth = chartRight - chartLeft;
+  const chartHeight = chartBottom - chartTop;
+  const barGap = 12;
+  const barCount = data.length;
+  const totalGap = barGap * (barCount + 1);
+  const barWidth = Math.min((chartWidth - totalGap) / barCount, 120);
+  const actualTotalWidth = barCount * barWidth + (barCount + 1) * barGap;
+  const offsetX = chartLeft + (chartWidth - actualTotalWidth) / 2;
+  const gridLineCount = 5;
+  const gridLines = Array.from({ length: gridLineCount + 1 }, (_, i) => ({
+    value: maxValue / gridLineCount * i,
+    y: chartBottom - i / gridLineCount * chartHeight
+  }));
+  return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("svg", { viewBox: "0 0 1920 1080", style: { width: "100%", height: "100%", position: "absolute", inset: 0 }, children: [
+    title && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+      "text",
+      {
+        x: 960,
+        y: 80,
+        textAnchor: "middle",
+        fill: theme.colors.text,
+        fontFamily: theme.fonts.heading,
+        fontWeight: 700,
+        fontSize: 48,
+        opacity: spring({ frame, fps, config: { damping: 20 } }),
+        children: title
+      }
+    ),
+    showGrid && gridLines.map((line, i) => {
+      const opacity2 = interpolate(frame, [0, 10], [0, 0.6], { extrapolateRight: "clamp" });
+      return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("g", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          "line",
+          {
+            x1: chartLeft,
+            y1: line.y,
+            x2: chartRight,
+            y2: line.y,
+            stroke: theme.colors.border,
+            strokeWidth: 1,
+            opacity: opacity2
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          "text",
+          {
+            x: chartLeft - 12,
+            y: line.y + 5,
+            textAnchor: "end",
+            fill: theme.colors.textMuted,
+            fontFamily: theme.fonts.body,
+            fontSize: 20,
+            opacity: opacity2,
+            children: formatValue(line.value)
+          }
+        )
+      ] }, `g-${i}`);
+    }),
+    /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+      "line",
+      {
+        x1: chartLeft,
+        y1: chartTop,
+        x2: chartLeft,
+        y2: chartBottom,
+        stroke: theme.colors.border,
+        strokeWidth: 2,
+        opacity: interpolate(frame, [0, 8], [0, 1], { extrapolateRight: "clamp" })
+      }
+    ),
+    /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+      "line",
+      {
+        x1: chartLeft,
+        y1: chartBottom,
+        x2: chartRight,
+        y2: chartBottom,
+        stroke: theme.colors.border,
+        strokeWidth: 2,
+        opacity: interpolate(frame, [0, 8], [0, 1], { extrapolateRight: "clamp" })
+      }
+    ),
+    data.map((datum, i) => {
+      const color = colors[i % colors.length];
+      const barX = offsetX + barGap + i * (barWidth + barGap);
+      const barHeightFull = datum.value / maxValue * chartHeight;
+      const delay2 = i * 4;
+      let progress;
+      if (animationStyle === "grow-up") {
+        progress = spring({ frame: frame - delay2, fps, config: { damping: 14, stiffness: 80 } });
+      } else if (animationStyle === "slide-in") {
+        progress = interpolate(frame, [delay2 + 5, delay2 + 25], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+      } else {
+        progress = spring({ frame: frame - delay2, fps, config: { damping: 8, stiffness: 200 } });
+      }
+      const barHeight = barHeightFull * progress;
+      const barY = chartBottom - barHeight;
+      const opacity2 = interpolate(frame, [delay2, delay2 + 6], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+      const xOffset = animationStyle === "slide-in" ? (1 - progress) * 40 : 0;
+      return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("g", { opacity: opacity2, transform: `translate(${xOffset}, 0)`, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          "rect",
+          {
+            x: barX,
+            y: barY,
+            width: barWidth,
+            height: barHeight,
+            rx: 4,
+            fill: color
+          }
+        ),
+        showValues && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          "text",
+          {
+            x: barX + barWidth / 2,
+            y: barY - 10,
+            textAnchor: "middle",
+            fill: theme.colors.text,
+            fontFamily: theme.fonts.body,
+            fontSize: 22,
+            fontWeight: 600,
+            children: formatValue(datum.value)
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          "text",
+          {
+            x: barX + barWidth / 2,
+            y: chartBottom + 30,
+            textAnchor: "middle",
+            fill: theme.colors.textMuted,
+            fontFamily: theme.fonts.body,
+            fontSize: 18,
+            children: datum.label
+          }
+        )
+      ] }, i);
+    })
+  ] });
+}
+function formatValue(v) {
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + "M";
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + "K";
+  return Math.floor(v).toLocaleString();
+}
+
+// src/components/data/LineChart.tsx
+var import_jsx_runtime101 = __toESM(require_jsx_runtime(), 1);
+function LineChart({
+  series,
+  title,
+  showGrid = true,
+  showMarkers = true,
+  showLegend = true,
+  animationStyle = "draw"
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const theme = useTheme();
+  const chartLeft = 140;
+  const chartRight = 1780;
+  const chartTop = title ? 200 : 120;
+  const chartBottom = 920;
+  const chartWidth = chartRight - chartLeft;
+  const chartHeight = chartBottom - chartTop;
+  const allValues = series.flatMap((s) => s.data.map((d) => d.value));
+  const maxValue = Math.max(...allValues, 1);
+  const allLabels = series[0]?.data.map((d) => d.label) || [];
+  const xStep = allLabels.length > 1 ? chartWidth / (allLabels.length - 1) : chartWidth;
+  const gridLineCount = 5;
+  const gridLines = Array.from({ length: gridLineCount + 1 }, (_, i) => ({
+    value: maxValue / gridLineCount * i,
+    y: chartBottom - i / gridLineCount * chartHeight
+  }));
+  return /* @__PURE__ */ (0, import_jsx_runtime101.jsxs)("svg", { viewBox: "0 0 1920 1080", style: { width: "100%", height: "100%", position: "absolute", inset: 0 }, children: [
+    title && /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(
+      "text",
+      {
+        x: 960,
+        y: 80,
+        textAnchor: "middle",
+        fill: theme.colors.text,
+        fontFamily: theme.fonts.heading,
+        fontWeight: 700,
+        fontSize: 48,
+        children: title
+      }
+    ),
+    showGrid && gridLines.map((line, i) => /* @__PURE__ */ (0, import_jsx_runtime101.jsxs)("g", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(
+        "line",
+        {
+          x1: chartLeft,
+          y1: line.y,
+          x2: chartRight,
+          y2: line.y,
+          stroke: theme.colors.border,
+          strokeWidth: 1,
+          opacity: interpolate(frame, [0, 10], [0, 0.5], { extrapolateRight: "clamp" })
+        }
+      ),
+      /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(
+        "text",
+        {
+          x: chartLeft - 12,
+          y: line.y + 5,
+          textAnchor: "end",
+          fill: theme.colors.textMuted,
+          fontFamily: theme.fonts.body,
+          fontSize: 20,
+          children: formatValue2(line.value)
+        }
+      )
+    ] }, `g-${i}`)),
+    /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(
+      "line",
+      {
+        x1: chartLeft,
+        y1: chartTop,
+        x2: chartLeft,
+        y2: chartBottom,
+        stroke: theme.colors.border,
+        strokeWidth: 2
+      }
+    ),
+    /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(
+      "line",
+      {
+        x1: chartLeft,
+        y1: chartBottom,
+        x2: chartRight,
+        y2: chartBottom,
+        stroke: theme.colors.border,
+        strokeWidth: 2
+      }
+    ),
+    allLabels.map((label3, i) => /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(
+      "text",
+      {
+        x: chartLeft + i * xStep,
+        y: chartBottom + 30,
+        textAnchor: "middle",
+        fill: theme.colors.textMuted,
+        fontFamily: theme.fonts.body,
+        fontSize: 16,
+        children: label3
+      },
+      i
+    )),
+    series.map((s, si) => {
+      const color = s.color || theme.colors.chart[si % theme.colors.chart.length];
+      const points = s.data.map((d, i) => ({
+        x: chartLeft + i * xStep,
+        y: chartBottom - d.value / maxValue * chartHeight,
+        value: d.value
+      }));
+      const drawProgress = animationStyle === "draw" ? interpolate(frame, [si * 10, si * 10 + 30], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : interpolate(frame, [si * 10, si * 10 + 15], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+      const pathD = points.map((p, i) => {
+        const visibleLength = Math.floor(points.length * drawProgress);
+        if (i > visibleLength) return null;
+        const prev = points[Math.min(i, Math.max(0, visibleLength - 1))];
+        if (!prev) return null;
+        return `${i === 0 ? "M" : "L"} ${prev.x} ${prev.y}`;
+      }).filter(Boolean).join(" ");
+      return /* @__PURE__ */ (0, import_jsx_runtime101.jsxs)("g", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(
+          "path",
+          {
+            d: pathD,
+            fill: "none",
+            stroke: color,
+            strokeWidth: 3,
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+            opacity: interpolate(frame, [si * 10, si * 10 + 10], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(
+          "path",
+          {
+            d: `${pathD} L ${points[points.length - 1]?.x || chartLeft} ${chartBottom} L ${points[0]?.x || chartLeft} ${chartBottom} Z`,
+            fill: color,
+            opacity: 0.1
+          }
+        ),
+        showMarkers && points.map((p, pi) => {
+          const markerShow = frame >= si * 10 + pi * 2;
+          return /* @__PURE__ */ (0, import_jsx_runtime101.jsxs)("g", { opacity: markerShow ? 1 : 0, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime101.jsx)("circle", { cx: p.x, cy: p.y, r: 5, fill: color, stroke: theme.colors.background, strokeWidth: 2 }),
+            /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(
+              "text",
+              {
+                x: p.x,
+                y: p.y - 12,
+                textAnchor: "middle",
+                fill: theme.colors.text,
+                fontFamily: theme.fonts.body,
+                fontSize: 16,
+                fontWeight: 600,
+                children: formatValue2(p.value)
+              }
+            )
+          ] }, pi);
+        })
+      ] }, si);
+    }),
+    showLegend && series.length > 1 && /* @__PURE__ */ (0, import_jsx_runtime101.jsx)("g", { transform: `translate(${chartRight - 200}, ${chartTop})`, children: series.map((s, i) => {
+      const color = s.color || theme.colors.chart[i % theme.colors.chart.length];
+      return /* @__PURE__ */ (0, import_jsx_runtime101.jsxs)("g", { transform: `translate(0, ${i * 30})`, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime101.jsx)("rect", { x: 0, y: 0, width: 16, height: 16, rx: 3, fill: color }),
+        /* @__PURE__ */ (0, import_jsx_runtime101.jsx)("text", { x: 22, y: 13, fill: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 14, children: s.name })
+      ] }, i);
+    }) })
+  ] });
+}
+function formatValue2(v) {
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + "M";
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + "K";
+  return Math.floor(v).toLocaleString();
+}
+
+// src/components/data/PieChart.tsx
+var import_jsx_runtime102 = __toESM(require_jsx_runtime(), 1);
+function PieChart({
+  data,
+  title,
+  colors: customColors,
+  donut = false,
+  showLegend = true,
+  animationStyle = "spin"
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const theme = useTheme();
+  const colors = customColors || theme.colors.chart;
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  const cx = 960;
+  const cy = 540;
+  const radius = Math.min(
+    showLegend ? 300 : 380,
+    title ? 340 : 400
+  );
+  const innerRadius = donut ? radius * 0.45 : 0;
+  let currentAngle = -Math.PI / 2;
+  const segments = data.map((d, i) => {
+    const sliceAngle = d.value / total * Math.PI * 2;
+    const startAngle = currentAngle;
+    const endAngle = currentAngle + sliceAngle;
+    currentAngle = endAngle;
+    return { ...d, startAngle, endAngle, color: colors[i % colors.length] };
+  });
+  const spinProgress = animationStyle === "spin" ? interpolate(frame, [0, 30], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 1;
+  const labelOpacity = interpolate(frame, [20, 35], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  return /* @__PURE__ */ (0, import_jsx_runtime102.jsxs)("svg", { viewBox: "0 0 1920 1080", style: { width: "100%", height: "100%", position: "absolute", inset: 0 }, children: [
+    title && /* @__PURE__ */ (0, import_jsx_runtime102.jsx)(
+      "text",
+      {
+        x: 960,
+        y: 80,
+        textAnchor: "middle",
+        fill: theme.colors.text,
+        fontFamily: theme.fonts.heading,
+        fontWeight: 700,
+        fontSize: 48,
+        children: title
+      }
+    ),
+    /* @__PURE__ */ (0, import_jsx_runtime102.jsx)("g", { transform: `rotate(${spinProgress * 360 - 90}, ${cx}, ${cy})`, children: segments.map((seg, i) => {
+      const start = seg.startAngle;
+      const end = seg.endAngle;
+      const x1 = cx + radius * Math.cos(start);
+      const y1 = cy + radius * Math.sin(start);
+      const x2 = cx + radius * Math.cos(end);
+      const y2 = cy + radius * Math.sin(end);
+      const largeArc = end - start > Math.PI ? 1 : 0;
+      let pathD;
+      if (animationStyle === "sequential") {
+        const segProgress = interpolate(frame, [i * 5, i * 5 + 20], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+        const currentEnd = start + (end - start) * segProgress;
+        const cx2 = cx + radius * Math.cos(currentEnd);
+        const cy2 = cy + radius * Math.sin(currentEnd);
+        pathD = describeArc(cx, cy, radius, innerRadius, start, currentEnd);
+        if (segProgress <= 0) return null;
+      } else {
+        pathD = describeArc(cx, cy, radius, innerRadius, start, end);
+      }
+      return /* @__PURE__ */ (0, import_jsx_runtime102.jsxs)("g", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime102.jsx)("path", { d: pathD, fill: seg.color, stroke: theme.colors.background, strokeWidth: 2 }),
+        showLegend && end - start > 0.3 && /* @__PURE__ */ (0, import_jsx_runtime102.jsxs)(
+          "text",
+          {
+            x: cx + (radius + innerRadius) / 2 * Math.cos(start + (end - start) / 2 + (animationStyle === "spin" ? spinProgress * 360 * Math.PI / 180 : 0)),
+            y: cy + (radius + innerRadius) / 2 * Math.sin(start + (end - start) / 2 + (animationStyle === "spin" ? spinProgress * 360 * Math.PI / 180 : 0)),
+            textAnchor: "middle",
+            dominantBaseline: "central",
+            fill: "#fff",
+            fontFamily: theme.fonts.body,
+            fontSize: 16,
+            fontWeight: 600,
+            opacity: labelOpacity,
+            children: [
+              Math.round(seg.value / total * 100),
+              "%"
+            ]
+          }
+        )
+      ] }, i);
+    }) }),
+    showLegend && /* @__PURE__ */ (0, import_jsx_runtime102.jsx)("g", { transform: `translate(${cx + radius + 60}, ${cy - segments.length * 18})`, children: segments.map((seg, i) => /* @__PURE__ */ (0, import_jsx_runtime102.jsxs)("g", { transform: `translate(0, ${i * 36})`, opacity: labelOpacity, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime102.jsx)("rect", { x: 0, y: 0, width: 16, height: 16, rx: 3, fill: seg.color }),
+      /* @__PURE__ */ (0, import_jsx_runtime102.jsx)("text", { x: 22, y: 13, fill: theme.colors.text, fontFamily: theme.fonts.body, fontSize: 14, children: seg.label }),
+      /* @__PURE__ */ (0, import_jsx_runtime102.jsx)("text", { x: 22, y: 28, fill: theme.colors.textMuted, fontFamily: theme.fonts.body, fontSize: 12, children: formatValue3(seg.value) })
+    ] }, i)) })
+  ] });
+}
+function describeArc(cx, cy, outerR, innerR, startAngle, endAngle) {
+  const x1 = cx + outerR * Math.cos(startAngle);
+  const y1 = cy + outerR * Math.sin(startAngle);
+  const x2 = cx + outerR * Math.cos(endAngle);
+  const y2 = cy + outerR * Math.sin(endAngle);
+  const x3 = cx + innerR * Math.cos(endAngle);
+  const y3 = cy + innerR * Math.sin(endAngle);
+  const x4 = cx + innerR * Math.cos(startAngle);
+  const y4 = cy + innerR * Math.sin(startAngle);
+  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+  if (innerR === 0) {
+    return `M ${cx} ${cy} L ${x1} ${y1} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+  }
+  return `M ${x4} ${y4} L ${x1} ${y1} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4} ${y4} Z`;
+}
+function formatValue3(v) {
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + "M";
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + "K";
+  return Math.floor(v).toLocaleString();
+}
+
+// src/components/data/ComparisonCard.tsx
+var import_jsx_runtime103 = __toESM(require_jsx_runtime(), 1);
+function ComparisonCard({
+  title,
+  left,
+  right
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const theme = useTheme();
+  const dividerDraw = spring({
+    frame: frame - fps * 0.3,
+    fps,
+    config: { damping: 20, stiffness: 100 }
+  });
+  const leftEntrance = spring({
+    frame,
+    fps,
+    config: { damping: 18, stiffness: 100 }
+  });
+  const rightEntrance = spring({
+    frame: frame - fps * 0.15,
+    fps,
+    config: { damping: 18, stiffness: 100 }
+  });
+  return /* @__PURE__ */ (0, import_jsx_runtime103.jsxs)("div", { style: {
+    position: "absolute",
+    inset: 0,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "6%",
+    background: theme.colors.background
+  }, children: [
+    title && /* @__PURE__ */ (0, import_jsx_runtime103.jsx)("div", { style: {
+      fontFamily: theme.fonts.heading,
+      fontSize: "2em",
+      fontWeight: 700,
+      color: theme.colors.text,
+      marginBottom: "1em",
+      opacity: leftEntrance
+    }, children: title }),
+    /* @__PURE__ */ (0, import_jsx_runtime103.jsxs)("div", { style: {
+      display: "flex",
+      gap: "5%",
+      width: "100%",
+      maxWidth: "80%",
+      alignItems: "stretch"
+    }, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime103.jsxs)("div", { style: {
+        flex: 1,
+        padding: "2em",
+        background: left.color || `${theme.colors.primary}15`,
+        borderRadius: 16,
+        textAlign: "center",
+        opacity: leftEntrance,
+        transform: `translateX(${(1 - leftEntrance) * -30}px)`
+      }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime103.jsx)("div", { style: {
+          fontFamily: theme.fonts.body,
+          fontSize: "1em",
+          color: theme.colors.textMuted,
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          marginBottom: "0.5em"
+        }, children: left.label }),
+        /* @__PURE__ */ (0, import_jsx_runtime103.jsx)("div", { style: {
+          fontFamily: theme.fonts.heading,
+          fontSize: "3em",
+          fontWeight: 800,
+          color: left.color || theme.colors.primary
+        }, children: left.value }),
+        left.change !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime103.jsx)(ChangeBadge, { change: left.change })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime103.jsx)("div", { style: {
+        width: 2,
+        background: `linear-gradient(180deg, transparent, ${theme.colors.border}, transparent)`,
+        transform: `scaleY(${dividerDraw})`,
+        alignSelf: "stretch"
+      } }),
+      /* @__PURE__ */ (0, import_jsx_runtime103.jsxs)("div", { style: {
+        flex: 1,
+        padding: "2em",
+        background: right.color || `${theme.colors.gradient[1]}15`,
+        borderRadius: 16,
+        textAlign: "center",
+        opacity: rightEntrance,
+        transform: `translateX(${(1 - rightEntrance) * 30}px)`
+      }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime103.jsx)("div", { style: {
+          fontFamily: theme.fonts.body,
+          fontSize: "1em",
+          color: theme.colors.textMuted,
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          marginBottom: "0.5em"
+        }, children: right.label }),
+        /* @__PURE__ */ (0, import_jsx_runtime103.jsx)("div", { style: {
+          fontFamily: theme.fonts.heading,
+          fontSize: "3em",
+          fontWeight: 800,
+          color: right.color || theme.colors.gradient[1]
+        }, children: right.value }),
+        right.change !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime103.jsx)(ChangeBadge, { change: right.change })
+      ] })
+    ] })
+  ] });
+}
+function ChangeBadge({ change }) {
+  const isUp = change > 0;
+  return /* @__PURE__ */ (0, import_jsx_runtime103.jsxs)("div", { style: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    marginTop: "0.5em",
+    fontFamily: "monospace",
+    fontSize: "1.2em",
+    fontWeight: 700,
+    color: isUp ? "#10B981" : "#EF4444"
+  }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime103.jsx)("span", { children: isUp ? "\u2191" : "\u2193" }),
+    /* @__PURE__ */ (0, import_jsx_runtime103.jsxs)("span", { children: [
+      Math.abs(change),
+      "%"
+    ] })
+  ] });
+}
+
 // src/components/atmosphere/GradientBackground.tsx
-var import_jsx_runtime96 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime104 = __toESM(require_jsx_runtime(), 1);
 function GradientBackground({
   type = "linear",
   colors,
@@ -46375,8 +47455,8 @@ function GradientBackground({
   } else {
     gradient = `linear-gradient(${angle}deg, ${c2.join(", ")})`;
   }
-  return /* @__PURE__ */ (0, import_jsx_runtime96.jsxs)("div", { style: { position: "absolute", inset: 0 }, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime104.jsxs)("div", { style: { position: "absolute", inset: 0 }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime104.jsx)(
       "div",
       {
         style: {
@@ -46386,7 +47466,7 @@ function GradientBackground({
         }
       }
     ),
-    noise && /* @__PURE__ */ (0, import_jsx_runtime96.jsx)(
+    noise && /* @__PURE__ */ (0, import_jsx_runtime104.jsx)(
       "div",
       {
         style: {
@@ -46402,8 +47482,8 @@ function GradientBackground({
 }
 
 // src/components/atmosphere/ParticleField.tsx
-var React45 = __toESM(require_react(), 1);
-var import_jsx_runtime97 = __toESM(require_jsx_runtime(), 1);
+var React46 = __toESM(require_react(), 1);
+var import_jsx_runtime105 = __toESM(require_jsx_runtime(), 1);
 function ParticleField({
   count = 40,
   speed = 0.3,
@@ -46414,7 +47494,7 @@ function ParticleField({
   const { fps } = useVideoConfig();
   const theme = useTheme();
   const particleColor = color ?? theme.colors.primary;
-  const particles = React45.useMemo(() => {
+  const particles = React46.useMemo(() => {
     return Array.from({ length: count }, (_, i) => ({
       x: random(`px${i}`) * 100,
       y: random(`py${i}`) * 100,
@@ -46425,11 +47505,11 @@ function ParticleField({
     }));
   }, [count, speed, size[0], size[1]]);
   const t = frame / fps;
-  return /* @__PURE__ */ (0, import_jsx_runtime97.jsx)("div", { style: { position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }, children: particles.map((p, i) => {
+  return /* @__PURE__ */ (0, import_jsx_runtime105.jsx)("div", { style: { position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }, children: particles.map((p, i) => {
     const x = ((p.x + p.vx * t * 10) % 110 + 110) % 110 - 5;
     const y = ((p.y + p.vy * t * 10) % 110 + 110) % 110 - 5;
     const pulseOpacity = p.opacity * (0.7 + 0.3 * Math.sin(t * 2 + i));
-    return /* @__PURE__ */ (0, import_jsx_runtime97.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime105.jsx)(
       "div",
       {
         style: {
@@ -46451,7 +47531,7 @@ function ParticleField({
 }
 
 // src/components/atmosphere/LightLeak.tsx
-var import_jsx_runtime98 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime106 = __toESM(require_jsx_runtime(), 1);
 function LightLeak({
   intensity = 0.4,
   color
@@ -46475,7 +47555,7 @@ function LightLeak({
       opacity: intensity * (0.3 + 0.3 * Math.cos(t * 0.5))
     }
   ];
-  return /* @__PURE__ */ (0, import_jsx_runtime98.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime106.jsx)(
     "div",
     {
       style: {
@@ -46485,7 +47565,7 @@ function LightLeak({
         pointerEvents: "none",
         mixBlendMode: "screen"
       },
-      children: spots.map((spot, i) => /* @__PURE__ */ (0, import_jsx_runtime98.jsx)(
+      children: spots.map((spot, i) => /* @__PURE__ */ (0, import_jsx_runtime106.jsx)(
         "div",
         {
           style: {
@@ -46507,8 +47587,8 @@ function LightLeak({
 }
 
 // src/components/layout/SplitScreen.tsx
-var React46 = __toESM(require_react(), 1);
-var import_jsx_runtime99 = __toESM(require_jsx_runtime(), 1);
+var React47 = __toESM(require_react(), 1);
+var import_jsx_runtime107 = __toESM(require_jsx_runtime(), 1);
 function SplitScreen({
   direction = "horizontal",
   ratio = 0.5,
@@ -46523,11 +47603,11 @@ function SplitScreen({
     fps,
     config: { damping: 14, stiffness: 120, mass: 1 }
   });
-  const childArray = React46.Children.toArray(children);
+  const childArray = React47.Children.toArray(children);
   const left = childArray[0];
   const right = childArray[1];
   const isH = direction === "horizontal";
-  return /* @__PURE__ */ (0, import_jsx_runtime99.jsxs)(
+  return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
     "div",
     {
       style: {
@@ -46540,7 +47620,7 @@ function SplitScreen({
         opacity: entrance
       },
       children: [
-        /* @__PURE__ */ (0, import_jsx_runtime99.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "div",
           {
             style: {
@@ -46553,7 +47633,7 @@ function SplitScreen({
             children: left
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime99.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "div",
           {
             style: {
@@ -46572,7 +47652,7 @@ function SplitScreen({
 }
 
 // src/components/layout/SpotlightReveal.tsx
-var import_jsx_runtime100 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime108 = __toESM(require_jsx_runtime(), 1);
 function SpotlightReveal({
   x = 50,
   y = 50,
@@ -46590,9 +47670,9 @@ function SpotlightReveal({
   });
   const radius = interpolate(prog, [0, 1], [0, maxRadius]);
   const bgColor = color ?? theme.colors.background;
-  return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { style: { position: "absolute", inset: 0 }, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { style: { position: "absolute", inset: 0 }, children }),
-    /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime108.jsxs)("div", { style: { position: "absolute", inset: 0 }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime108.jsx)("div", { style: { position: "absolute", inset: 0 }, children }),
+    /* @__PURE__ */ (0, import_jsx_runtime108.jsx)(
       "div",
       {
         style: {
@@ -46613,11 +47693,18 @@ var builtinComponents = {
   AnimatedHeadline,
   TypewriterText,
   GlitchReveal,
+  TextCard,
+  CalloutBox,
+  EndTag,
   DeviceMockup,
   CursorFlyover,
   ComparisonSlider,
   StatCounter,
   ProgressBar,
+  BarChart,
+  LineChart,
+  PieChart,
+  ComparisonCard,
   GradientBackground,
   ParticleField,
   LightLeak,

@@ -2,7 +2,7 @@ import * as React from "react";
 import { AbsoluteFill, Sequence, useVideoConfig, delayRender, continueRender, staticFile, Audio } from "remotion";
 import { ComposeContext, AudioContext } from "../context/index";
 import { cssJS, toClassName, getDurationInSeconds, type DurationStream } from "../utils/index";
-import type { Subvideo as SubvideoStream, Root } from "../schema/index";
+import type { Include as IncludeStream, Root } from "../schema/index";
 import { FolderLeaf } from "./Folder";
 import { ASPECT_DIMS } from "../scenes/types";
 
@@ -33,7 +33,7 @@ function isSceneBased(data: unknown): data is SceneBasedVideo {
 /**
  * Resolve a relative src path via staticFile() if it's not an absolute URL or path.
  */
-function resolveSubvideoSrc(src: string): string {
+function resolveIncludeSrc(src: string): string {
   if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:") || src.startsWith("/")) {
     return src;
   }
@@ -41,7 +41,7 @@ function resolveSubvideoSrc(src: string): string {
 }
 
 /**
- * SubvideoLeaf renders a video composition referenced by `src`.
+ * IncludeLeaf renders a video composition referenced by `src`.
  *
  * The `src` points to a JSON file that can be either:
  *   - A stream tree (has `type: "root"`) — rendered via FolderLeaf
@@ -50,9 +50,9 @@ function resolveSubvideoSrc(src: string): string {
  * Falls back to inline `children` (legacy behavior) when `src` is not set.
  *
  * Usage:
- *   { type: "subvideo", src: "./path/to/video.json", actions: [{ start: 0, end: 5 }] }
+ *   { type: "include", src: "./path/to/video.json", actions: [{ start: 0, end: 5 }] }
  */
-export function SubvideoLeaf({ stream }: { stream: SubvideoStream }) {
+export function IncludeLeaf({ stream }: { stream: IncludeStream }) {
   const { fps: parentFps, width: parentWidth, height: parentHeight } = useVideoConfig();
   const { Container } = React.useContext(ComposeContext);
   const parentAudio = React.useContext(AudioContext);
@@ -63,14 +63,14 @@ export function SubvideoLeaf({ stream }: { stream: SubvideoStream }) {
   const [externalData, setExternalData] = React.useState<unknown | null>(null);
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [handle] = React.useState(() =>
-    stream.src ? delayRender(`Loading subvideo: ${stream.src}`) : null,
+    stream.src ? delayRender(`Loading include: ${stream.src}`) : null,
   );
 
   React.useEffect(() => {
     if (!stream.src || !handle) return;
     let active = true;
 
-    const url = resolveSubvideoSrc(stream.src);
+    const url = resolveIncludeSrc(stream.src);
 
     fetch(url)
       .then((res) => {
@@ -79,6 +79,9 @@ export function SubvideoLeaf({ stream }: { stream: SubvideoStream }) {
       })
       .then((data) => {
         if (!active) return;
+        // Stamp durationInSeconds on loaded data so transitions work correctly
+        const streamTree = (data as any).root ?? data;
+        getDurationInSeconds(streamTree as unknown as DurationStream, true);
         setExternalData(data);
         continueRender(handle);
       })
@@ -86,7 +89,7 @@ export function SubvideoLeaf({ stream }: { stream: SubvideoStream }) {
         if (!active) return;
         const msg = err instanceof Error ? err.message : String(err);
         setLoadError(msg);
-        console.warn(`Subvideo "${stream.src}" failed to load: ${msg}`);
+        console.warn(`Include "${stream.src}" failed to load: ${msg}`);
         continueRender(handle);
       });
 
@@ -100,7 +103,7 @@ export function SubvideoLeaf({ stream }: { stream: SubvideoStream }) {
     }
   }, [stream, stream.src]);
 
-  // ── Subvideo foreground audio context ─────────────────────────────
+  // ── Include foreground audio context ─────────────────────────────
   const audioCtx = React.useMemo(
     () => ({ id: stream.id, foreground: true, parent: parentAudio }),
     [stream.id, parentAudio],
@@ -112,7 +115,7 @@ export function SubvideoLeaf({ stream }: { stream: SubvideoStream }) {
     if (loadError) {
       return (
         <div style={{ color: "#ff4444", fontSize: 24, padding: 40 }}>
-          ⚠ Subvideo load error: {loadError}
+          ⚠ Include load error: {loadError}
         </div>
       );
     }
@@ -214,7 +217,7 @@ export function SubvideoLeaf({ stream }: { stream: SubvideoStream }) {
   }, [externalData, loadError, parentFps, parentWidth, parentHeight]);
 
   // ── Action-based rendering ───────────────────────────────────────
-  const renderAction = (a: SubvideoStream["actions"][number]) => {
+  const renderAction = (a: IncludeStream["actions"][number]) => {
     const start = a.start ?? 0;
     const end = a.end ?? (stream.durationInSeconds ?? start + 1);
     const dur = Math.max(0.1, end - start);
@@ -232,7 +235,7 @@ export function SubvideoLeaf({ stream }: { stream: SubvideoStream }) {
         >
           <Container
             id={stream.id}
-            type="subvideo"
+            type="include"
             style={{
               ...cssJS(stream.style) as React.CSSProperties,
               width: parentWidth,
@@ -240,7 +243,7 @@ export function SubvideoLeaf({ stream }: { stream: SubvideoStream }) {
               overflow: "hidden",
               position: "relative",
             }}
-            className={`subvideo ${toClassName(stream.name ?? "")}`}
+            className={`include ${toClassName(stream.name ?? "")}`}
           >
             <FolderLeaf stream={stream as any} />
           </Container>

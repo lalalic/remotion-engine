@@ -396,6 +396,8 @@ const server = createServer((req, res) => {
                 line += ` src:"${(node.src || "").slice(0, 40)}"${dur}`;
               } else if (type === "map") {
                 line += ` waypoints:${(node.waypoints || []).length}${dur}`;
+              } else if (type === "include") {
+                line += ` src:"${(node.src || "").slice(0, 50)}"${dur}`;
               }
 
               // Add timing info for leaf actions
@@ -466,6 +468,7 @@ Stream types:
   effect: {animation (builtin name or "custom"), animationTimingFunction, animationIterationCount, customKeyframes, children, actions}
   rhythm: {src (audio), volume, spots[] (beat timestamps), children, actions}
   map: {waypoints[{lat,lng,label?,media?}], routeColor, routeWeight, markerSrc, zoom, actions}
+  include: src (video JSON file path/URL), volume, actions — embeds an external video composition referenced by src. Falls back to inline children (legacy).
 
 Actions (on leaf types): [{start, end, style?, volume?, effectId?, loop?}] — start/end in seconds, relative to parent container
 
