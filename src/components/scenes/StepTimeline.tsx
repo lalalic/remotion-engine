@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate, Easing } from "remotion";
-import { COLORS, FONTS } from "../design";
+import { COLORS, FONTS } from "./design";
 
 interface Step {
   label: string;

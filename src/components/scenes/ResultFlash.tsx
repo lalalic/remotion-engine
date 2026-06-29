@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate, Easing } from "remotion";
-import { COLORS, FONTS } from "../design";
+import { COLORS, FONTS } from "./design";
 
 /**
  * ResultFlash — Shows results appearing in a dramatic cascade.

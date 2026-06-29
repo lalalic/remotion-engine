@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate, Easing } from "remotion";
-import type { Transition } from "../types";
+
+export type Transition = "fade" | "cut" | "slide-left" | "slide-up" | "zoom";
 
 /**
  * TransitionWrapper — Wraps scene content with entrance/exit transitions.

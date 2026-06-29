@@ -181,6 +181,32 @@ export const include = base.extend({
 export type Include = z.infer<typeof include>;
 
 // ---------------------------------------------------------------------------
+// Scene — high-level storyboard node.
+// A scene is a leaf node that expands into a folder containing:
+//   - A component leaf (componentName + props)
+//   - An audio leaf for voiceover (if voiceover is set)
+//   - A subtitle leaf for captions (if captions are set)
+//
+// Scenes are the primary building block for agent-generated storyboards.
+// The engine instantiates them at render time via SceneLeaf.
+//
+// Usage:
+//   { type: "scene", componentName: "BigStatement", props: { headline: "..." },
+//     voiceover: "TTS text or audio path", duration: 5 }
+//
+// The parent folder's isSeries controls sequencing (like any other leaf).
+// ---------------------------------------------------------------------------
+export const scene = base.extend({
+  type: z.literal("scene").default("scene"),
+  componentName: z.string().describe("key in ComposeContext components registry"),
+  props: z.record(z.string(), z.unknown()).default(() => ({})),
+  voiceover: z.string().optional().describe("TTS text or audio file path for voiceover"),
+  captions: z.array(subtitleCue).optional().describe("optional caption cues"),
+  duration: z.number().min(0).default(5).describe("scene duration in seconds"),
+});
+export type Scene = z.infer<typeof scene>;
+
+// ---------------------------------------------------------------------------
 // Map — animated route visualization
 // ---------------------------------------------------------------------------
 export const mapWaypoint = z.object({
@@ -217,10 +243,11 @@ export const stream = z.discriminatedUnion("type", [
   rhythm,
   mapStream,
   include,
+  scene,
 ]);
 export type Stream = z.infer<typeof stream>;
 
 export const types = {
   root, folder, video, audio, image, subtitle, component,
-  effect, rhythm, map: mapStream, include,
+  effect, rhythm, map: mapStream, include, scene,
 } as const;

@@ -11,7 +11,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import {
   renderFixture,
-  renderScenes,
   getVideoInfo,
   extractFrame,
   extractAudio,
@@ -403,38 +402,31 @@ describe("Full Feature Combination", () => {
 });
 
 // ───────────────────────────────────────────────────────────────────────────
-// 9. Scene-Based Rendering (video.json format)
+// 9. Scene Node Rendering (stream tree scene type)
 // ───────────────────────────────────────────────────────────────────────────
 
-describe("Scene-Based Rendering", () => {
-  it("renders scenes composition", async () => {
-    const output = renderScenes(fixturePath("scenes.json"), {
+describe("Scene Node Rendering", () => {
+  it("renders scenes via stream tree scene nodes", async () => {
+    const output = renderFixture(fixturePath("scenes.json"), {
       outputName: "scenes.mp4",
       timeout: RENDER_TIMEOUT,
     });
 
     const info = getVideoInfo(output);
-    expect(info.width).toBe(1920); // Main16x9 is 1920x1080
-    expect(info.height).toBe(1080);
-    // scenes: 3s + 2s = 5s
+    expect(info.width).toBe(640);
+    expect(info.height).toBe(480);
+    // 2 scenes: 3s + 2s - 0.3s transition = ~4.7s
     expect(info.durationSec).toBeGreaterThanOrEqual(4);
 
-    // Extract frame
+    // Extract frame at 1s (scene 1)
     const frame = outPath("frames/scenes-1s.png");
     extractFrame(output, 1, frame);
     expect(isFrameNonBlank(frame)).toBe(true);
-  });
 
-  it("renders cover composition", async () => {
-    const output = renderScenes(fixturePath("scenes.json"), {
-      composition: "Cover16x9",
-      outputName: "scenes-cover.mp4",
-      timeout: RENDER_TIMEOUT,
-    });
-
-    const info = getVideoInfo(output);
-    expect(info.width).toBe(1920);
-    expect(info.height).toBe(1080);
+    // Extract frame at 4s (scene 2)
+    const frame2 = outPath("frames/scenes-4s.png");
+    extractFrame(output, 4, frame2);
+    expect(isFrameNonBlank(frame2)).toBe(true);
   });
 });
 

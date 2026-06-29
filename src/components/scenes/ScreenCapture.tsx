@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate, Easing, Img, staticFile, spring, useVideoConfig } from "remotion";
-import { COLORS, FONTS } from "../design";
+import { COLORS, FONTS } from "./design";
 
 /**
  * ScreenCapture — Real app screenshot with cinematic reveal.

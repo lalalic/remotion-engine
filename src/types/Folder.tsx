@@ -19,6 +19,7 @@ import { ComponentLeaf } from "./Component";
 import { RhythmLeaf } from "./Rhythm";
 import { MapLeaf } from "./Map";
 import { IncludeLeaf } from "./Include";
+import { SceneLeaf } from "./Scene";
 import { EffectWrapper } from "./Effect";
 
 const Leaves: Record<string, React.ComponentType<{ stream: any }>> = {
@@ -30,6 +31,7 @@ const Leaves: Record<string, React.ComponentType<{ stream: any }>> = {
   rhythm: RhythmLeaf,
   map: MapLeaf,
   include: IncludeLeaf,
+  scene: SceneLeaf,
 };
 
 const TransitionPresets: Record<string, (opts?: any) => any> = {

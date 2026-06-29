@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
-import { COLORS, FONTS } from "../design";
+import { COLORS, FONTS } from "./design";
 
 /**
  * PromptTyping — Simulates typing a chat prompt with cinematic flair.

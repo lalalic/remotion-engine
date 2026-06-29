@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate, Easing, spring, useVideoConfig } from "remotion";
-import { COLORS, FONTS } from "../design";
+import { COLORS, FONTS } from "./design";
 
 /**
  * BigStatement — Kinetic typography with word-by-word animation.

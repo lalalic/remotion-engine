@@ -44310,6 +44310,13 @@ function getDurationInSeconds(stream2, update = true) {
     if (update) stream2.durationInSeconds = total2;
     return total2;
   }
+  // scene: duration comes from the `duration` field directly
+  if (stream2.type === "scene") {
+    const d = stream2.duration ?? 0;
+    if (update) stream2.durationInSeconds = d;
+    return d;
+  }
+  
   if (!stream2.children?.length) {
     const last = stream2.actions?.[stream2.actions.length - 1];
     const d = last?.end ?? 0;
@@ -45405,7 +45412,8 @@ var Leaves = {
   component: ComponentLeaf,
   rhythm: RhythmLeaf,
   map: MapLeaf,
-  include: IncludeLeaf
+  include: IncludeLeaf,
+  scene: SceneLeaf
 };
 var TransitionPresets = {
   fade,
@@ -45633,7 +45641,8 @@ var stream = external_exports.discriminatedUnion("type", [
   effect,
   rhythm,
   mapStream,
-  include
+  include,
+  scene
 ]);
 
 // src/lite.entry.tsx

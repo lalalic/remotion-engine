@@ -1,49 +1,39 @@
 {
-  "meta": {
-    "title": "Scene Render Test",
-    "fps": 30,
-    "aspects": ["16x9"],
-    "duration": 5
-  },
-  "voiceover": {
-    "tts": "edge-tts",
-    "voice": "en-US-AriaNeural"
-  },
-  "scenes": [
+  "id": "root",
+  "type": "root",
+  "width": 640,
+  "height": 480,
+  "fps": 30,
+  "isSeries": true,
+  "transition": "fade",
+  "transitionTime": 0.3,
+  "theme": "cinematic",
+  "children": [
     {
       "id": "scene-1",
-      "start": 0,
-      "duration": 3,
-      "component": "BigStatement",
+      "type": "scene",
+      "componentName": "BigStatement",
       "props": {
         "headline": "Scene Rendering Works",
-        "subhead": "Testing the scene-based pipeline"
+        "subhead": "Testing the scene type in stream tree"
       },
-      "voiceover": {
-        "audio": ""
-      },
+      "duration": 3,
       "captions": [
-        { "t": 0, "text": "Scene rendering works" }
-      ],
-      "captionStyle": "bold-bottom",
-      "bgmIntensity": "low"
+        { "startFrom": 0, "endAt": 3, "text": "Scene rendering works" }
+      ]
     },
     {
       "id": "scene-2",
-      "start": 3,
-      "duration": 2,
-      "component": "CTA",
+      "type": "scene",
+      "componentName": "BigStatement",
       "props": {
-        "headline": "Test Complete"
+        "headline": "Test Complete",
+        "subhead": "All scene types render correctly"
       },
-      "voiceover": {
-        "audio": ""
-      },
+      "duration": 2,
       "captions": [
-        { "t": 0, "text": "Test complete" }
-      ],
-      "captionStyle": "bold-bottom",
-      "bgmIntensity": "low"
+        { "startFrom": 0, "endAt": 2, "text": "Test complete" }
+      ]
     }
   ]
 }

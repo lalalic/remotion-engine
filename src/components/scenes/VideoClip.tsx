@@ -8,7 +8,7 @@ import {
   useVideoConfig,
   spring,
 } from "remotion";
-import { COLORS, FONTS } from "../design";
+import { COLORS, FONTS } from "./design";
 
 /**
  * VideoClip — Play a pre-recorded demo video with cinematic entrance.
