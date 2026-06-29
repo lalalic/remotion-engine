@@ -16,20 +16,13 @@
       "description": "Opening hook with headline animation",
       "children": [
         {
-          "id": "scene-1-bg",
-          "type": "component",
-          "componentName": "GradientBackground",
-          "props": { "type": "radial", "animated": true },
-          "isBackground": true,
-          "actions": [{ "start": 0, "end": 3 }]
-        },
-        {
           "id": "scene-1-headline",
           "type": "component",
-          "componentName": "BigStatement",
+          "componentName": "AnimatedHeadline",
           "props": {
-            "headline": "Scene Rendering Works",
-            "subhead": "Testing the scene type in stream tree"
+            "text": "Scene Rendering Works",
+            "subtext": "Testing the scene type in stream tree",
+            "gradient": true
           },
           "actions": [{ "start": 0, "end": 3 }]
         }
@@ -44,10 +37,11 @@
         {
           "id": "scene-2-headline",
           "type": "component",
-          "componentName": "BigStatement",
+          "componentName": "AnimatedHeadline",
           "props": {
-            "headline": "Test Complete",
-            "subhead": "All scene types render correctly"
+            "text": "Test Complete",
+            "subtext": "All scene types render correctly",
+            "gradient": true
           },
           "actions": [{ "start": 0, "end": 2 }]
         }

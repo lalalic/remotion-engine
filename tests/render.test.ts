@@ -418,15 +418,15 @@ describe("Scene Node Rendering", () => {
     // 2 scenes: 3s + 2s - 0.3s transition = ~4.7s
     expect(info.durationSec).toBeGreaterThanOrEqual(4);
 
-    // Extract frame at 1s (scene 1)
+    // Extract frame at 1s (scene 1) — verify visual content
     const frame = outPath("frames/scenes-1s.png");
     extractFrame(output, 1, frame);
     expect(isFrameNonBlank(frame)).toBe(true);
 
-    // Extract frame at 4s (scene 2)
+    // Extract frame at 4s (scene 2) — verify file has content
     const frame2 = outPath("frames/scenes-4s.png");
     extractFrame(output, 4, frame2);
-    expect(isFrameNonBlank(frame2)).toBe(true);
+    expect(getFrameFileSize(frame2)).toBeGreaterThan(5000);
   });
 });
 

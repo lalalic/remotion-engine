@@ -50,21 +50,7 @@ import { LightLeak } from "./atmosphere/LightLeak";
 import { SplitScreen } from "./layout/SplitScreen";
 import { SpotlightReveal } from "./layout/SpotlightReveal";
 
-// Rich scene components (cinematic marketing video components)
-import { BigStatement } from "./scenes/BigStatement";
-import { PromptTyping } from "./scenes/PromptTyping";
-import { ResultFlash } from "./scenes/ResultFlash";
-import { StepTimeline } from "./scenes/StepTimeline";
-import { ComparisonSplit } from "./scenes/ComparisonSplit";
-import { AgentGraph } from "./scenes/AgentGraph";
-import { ScreenCapture } from "./scenes/ScreenCapture";
-import { VideoClip } from "./scenes/VideoClip";
-import { TransitionWrapper } from "./scenes/TransitionWrapper";
-// Atmosphere utilities from scenes
-import { GlowOrb, GridBackground, Vignette, GradientText, ScanLine, CounterAnimation } from "./scenes/Atmosphere";
 
-export { BigStatement, PromptTyping, ResultFlash, StepTimeline, ComparisonSplit, AgentGraph, ScreenCapture, VideoClip, TransitionWrapper };
-export { GlowOrb, GridBackground, Vignette, GradientText, ScanLine, CounterAnimation };
 
 /**
  * All built-in components keyed by name.
@@ -91,21 +77,4 @@ export const builtinComponents: Record<string, React.ComponentType<any>> = {
   LightLeak,
   SplitScreen,
   SpotlightReveal,
-  // Rich scene components
-  BigStatement,
-  PromptTyping,
-  ResultFlash,
-  StepTimeline,
-  ComparisonSplit,
-  AgentGraph,
-  ScreenCapture,
-  VideoClip,
-  TransitionWrapper,
-  // Atmosphere utilities
-  GlowOrb,
-  GridBackground,
-  Vignette,
-  GradientText,
-  ScanLine,
-  CounterAnimation,
 };
