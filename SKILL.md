@@ -1,931 +1,156 @@
 ---
 name: remotion-engine
 description: >-
-  Render-only Remotion engine. CLI takes a stream tree JSON (or template+data),
-  renders to MP4, or previews with labeling/chat.
+  Compose and render videos from JSON stream trees. CLI renders stream tree JSON
+  to MP4. Run via `npx lalalic/remotion-engine` — no install, no code.
 ---
 
-## Quickstart
+## Overview
+
+Three authoring levels:
+1. **Label** — browse media folder, label best clips, export labels.json
+2. **Storyboard** — `scene` nodes with high-level structure
+3. **Assemble** — full stream tree with all types, render to MP4
+
+---
+
+## 1. Stream Tree Rules
+
+Everything is a **stream tree**: nested JSON nodes typed by `type`.
+
+```json
+{ "id":"root", "type":"root", "width":1080, "height":1920, "fps":30,
+  "isSeries":true, "transition":"fade", "children":[...] }
+```
+
+### Composition
+
+| Concept | Rule |
+|---------|------|
+| **Series** (`isSeries:true`) | Sequential children. Optional `transition` (fade/slide/wipe/flip/clockWipe) + `transitionTime` (default 0.5s). |
+| **Parallel** (`isSeries:false`) | Simultaneous children. durationInSeconds = max child duration. |
+| **Background** (`isBackground:true`) | Loops for parent duration, excluded from duration calc. |
+| **Actions** | Every leaf: `actions[{start,end, volume?, loop?, effectId?, style?}]` — seconds relative to parent. |
+
+### Types
+
+| Type | Scenario | Key Fields |
+|------|----------|------------|
+| `root` | Canvas container | `width`, `height`, `fps`, `isSeries`, `transition`, `stylesheet` |
+| `folder` | Group children | `isSeries`, `transition`, `children[]` |
+| `scene` | **Storyboard node** — UI renders as collapsible card, engine treats as folder | `name`, `description`, `children[]` |
+| `image` | Still image | `src` (URL/staticFile), `fit` (contain/cover/fill) |
+| `video` | Video clip | `src`, `volume`, `playbackRate` |
+| `audio` | Soundtrack/SFX. `isBackground:true` loops. `foreground:true` ducks parent | `src`, `volume` |
+| `subtitle` | Text overlay. 3 input modes: inline text (supports HTML), VTT string/file, or explicit `cues[]` | `src` or `cues[]`, `fontSize`, `fontStyle`, `style`, `actions[]` |
+| `component` | Registered React component | `componentName` (registry key), `props` (JSON), `src` (remote URL) |
+| `effect` | CSS keyframe wrapper. 25+ built-in animations + custom keyframes | `animation` (name or `"custom"`), `customKeyframes`, `animationTimingFunction` |
+| `rhythm` | Beat-synced audio with timed children | `src`, `volume`, `spots[]` |
+| `map` | Canvas route visualization, no API key | `waypoints[{lat,lng,label}]`, `routeColor`, `routeWeight` |
+| `include` | Embed external video JSON | `src` (path/URL/data URI), `volume` |
+
+### Built-in Components (20)
+
+`{ type:"component", componentName:"...", props:{...} }`
+
+**Text**: `AnimatedHeadline`, `TypewriterText`, `GlitchReveal`, `TextCard`, `CalloutBox`, `EndTag`
+**Media**: `DeviceMockup` (browser/phone frame), `CursorFlyover`, `ComparisonSlider`
+**Data**: `StatCounter`, `ProgressBar`, `BarChart`, `LineChart`, `PieChart`, `ComparisonCard`
+**Atmosphere**: `GradientBackground`, `ParticleField`, `LightLeak`
+**Layout**: `SplitScreen`, `SpotlightReveal`
+
+### Dynamic Content
+
+3 ways without rebuilding:
+1. **Effect wrapper** — `effect` node with 25+ built-in animations (fadeIn, bounceIn, pulse, etc.) or custom keyframes
+2. **Remote component** — `{ type:"component", src:"https://...", componentName:"X" }` — fetched at render time
+3. **Custom component** — add `.tsx` to `src/components/`, register in `builtinComponents`. See [docs/dynamic-components.md](docs/dynamic-components.md)
+
+### Subtitle Styling
+
+3 input modes: inline text (HTML supported), VTT file/string, or `cues[]` array.
+Karaoke: `className:"karaoke"` or explicit `words[{text,start,end}]`.
+Style cascade: `style` field → `fontSize/fontStyle` → cue className → root `stylesheet`.
+
+---
+
+## 2. Video Design Best Practice
+
+Three-phase workflow:
+
+### Label → labels.json
 
 ```bash
-git clone <repo>
-cd remotion-engine
-npm install
-
-# Render sample → out/preview.mp4
-npm run render
-
-# Preview
-npm run preview -- sample.json
-
-# Preview with labels (interactive scene labeling)
-npm run preview -- sample.json --label
-
-# Preview with chat (agent-assisted editing)
-npm run preview -- sample.json --edit
+npx lalalic/remotion-engine preview /path/to/media/folder --label
 ```
+Browse clips, type labels, press Enter. Output: `labels.json` with `{time, sceneIndex, src, label}`.
 
-## Stream Tree JSON — The Input
+### Storyboard → scene-video.json
 
-Everything starts from a **stream tree JSON** — a nested tree of typed nodes. Each leaf has `actions[]` defining when it appears on the timeline.
-
-Minimal example (`sample.json`):
+`scene` nodes are organizational. The UI shows them as collapsible cards.
+Agent generates a storyboard as `scene[]` array, then fills each scene with children.
 
 ```json
-{
-  "id": "root",
-  "type": "root",
-  "width": 1080,
-  "height": 1920,
-  "fps": 30,
-  "isSeries": true,
-  "transition": "fade",
-  "transitionTime": 0.4,
-  "children": [
-    {
-      "id": "scene-1",
-      "type": "folder",
-      "children": [
-        { "id": "bg", "type": "image", "src": "https://...", "fit": "cover",
-          "actions": [{ "start": 0, "end": 3 }] },
-        { "id": "title", "type": "subtitle", "src": "Hello",
-          "actions": [{ "start": 0, "end": 3 }] }
-      ]
-    }
-  ]
-}
+{ "type":"scene", "name":"Intro", "description":"Hook",
+  "children":[{"type":"component","componentName":"AnimatedHeadline",...}] }
 ```
 
-**11 stream types**: `root`, `folder`, `video`, `audio`, `image`, `subtitle`, `component`, `effect`, `rhythm`, `map`, `subvideo`.
+### Assemble → video.json (production)
 
-**Composition logic**:
-- **Series** (`isSeries: true`) — children play one after another, with optional transition (`fade`, `slide`, `wipe`, `flip`, `clockWipe`)
-- **Parallel** (`isSeries: false` / unset) — children play simultaneously, max duration wins
-- **Background** (`isBackground: true`) — child loops for parent's full duration, excluded from duration calc
+Replace `scene` containers with full stream tree. Add audio, effects, transitions, captions.
 
-**Actions** control timing per leaf:
-```json
-"actions": [{ "start": 0, "end": 6, "volume": 0.8 }]
+```bash
+npx lalalic/remotion-engine preview final.json --edit   # live agent loop
+npx lalalic/remotion-engine render final.json --aspect all  # MP4 output
 ```
-Fields: `start`, `end` (seconds), `startFrom`/`endAt` (trim source), `loop`, `effectId`, `style` (inline CSS), `volume`.
 
 ---
 
-## CLI Usage
+## 3. CLI
 
-```
-node src/render/cli.mjs <command> [options]
-```
-
-Can also use npm scripts:
-```
-npm run render [-- <args>]
-npm run preview [-- <args>]
-npm run templates
+```bash
+npx lalalic/remotion-engine <command> [options]
 ```
 
 ### Commands
 
 | Command | Description |
 |---------|-------------|
-| `render <file.json>` | Render a stream tree JSON to MP4 |
-| `render --template <id> --data <data.json>` | Resolve a template with data, then render |
-| `templates` | List all available templates |
-| `preview <file.json>` | Open Remotion Studio for visual debugging |
-| `preview <file.json> --label` | Custom player: interactive scene labeling |
-| `preview <file.json> --edit` | Custom player: auto-reloads when JSON file changes |
+| `render <file.json>` | Render stream tree to MP4 |
+| `render --template <id> --data <data.json>` | Resolve template with data, render |
+| `preview <file.json>` | Open Remotion Studio |
+| `preview <file.json/folder> --label` | Interactive labeling player |
+| `preview <file.json> --edit` | Live editing loop (auto-reload on file change) |
+| `templates` | List all templates |
 
 ### Options
 
-| Flag | Type | Default | Description |
-|------|------|---------|-------------|
-| `--aspect` | `16x9` / `9x16` / `1x1` / `all` | `16x9` | Output aspect ratio |
-| `--output` | path | `out/video-{aspect}.mp4` | Output file |
-| `--template` | string | — | Template ID (see `npm run templates`) |
-| `--data` | path | — | JSON data file for template slots |
-| `--verbose` | boolean | `false` | Show every progress frame (default: compact, every 50th) |
-| `--force-new` | boolean | `false` | Force new Studio instance |
-| `--label` | boolean | `false` | Player mode: scene labeling |
-| `--edit` | boolean | `false` | Player mode: auto-reload on JSON file change |
-| `--port` | number | `3001` | Player server port |
+| Flag | Values | Default |
+|------|--------|---------|
+| `--aspect` | `16x9` / `9x16` / `1x1` / `all` | `16x9` |
+| `--output` | path | `out/video-{aspect}.mp4` |
+| `--port` | number | `3001` |
+| `--verbose` | flag | `false` (compact progress) |
 
----
-
-## Preview Modes (prefer --label / --chat over studio)
-
-### remotion studio (raw preview)
+### Edit Mode for Agents
 
 ```bash
-npm run preview -- my-video.json
-```
+# Start player in background
+npx lalalic/remotion-engine preview draft.json --edit --port 3001 &
 
-Opens Remotion Studio at `localhost:3000`. Hot-reloads on JSON changes. Good for visual debugging of stream trees.
-
-### --label: Interactive Scene Labeling
-
-```bash
-npm run preview -- scenes.json --label
-npm run preview -- scenes.json --label --port 3001
-```
-
-Opens a **standalone label preview server** (`src/player/label-server.mjs`) — a simplified player with:
-
-- **Thumbnail strip** — each scene shows a clickable media preview (no text overlay, just images or initials)
-- **Seeking** — clicking a thumbnail seeks the player to that scene's start time via `PlayerRef.seekTo()`
-- **Auto-highlight** — as the video plays, the current scene's thumbnail is highlighted with a blue border
-- **Label input** — type a label, press Enter; saves with current timestamp + scene metadata to `labels.json`
-- **Green badge** — labeled scenes show a dot indicator on their thumbnail
-- **Media folder support** — pass a folder instead of JSON to auto-create scenes from media files
-
-```bash
-# From a JSON file
-npm run preview -- scenes.json --label
-
-# From a media folder (images/videos)
-npm run preview -- /path/to/media-folder --label
-```
-
-Each saved label records:
-
-```json
-{
-  "time": 4.242,
-  "sceneIndex": 1,
-  "sceneName": "scene-2",
-  "src": "https://picsum.photos/seed/sub2/1080/1920",
-  "mediaType": "image",
-  "label": "good lighting, keep this shot"
-}
-```
-
-The label mode is a separate server from edit mode — it has no file watcher, no SSE, and no AI editing pipeline. It's purely for interactive scene labeling.
-
-### --edit: Auto-Reload on JSON Change
-
-```bash
-npm run preview -- my-video.json --edit
-npm run preview -- my-video.json --edit --port 3001
-```
-
-Opens a custom player with an **edit input** that sends edit requests to an AI agent (pi).
-The player **automatically reloads** when the JSON file changes.
-
-Unlike the label player, edit mode works with **any JSON structure** — not just flat scenes.
-The server builds a recursive description of the full stream tree, so the AI agent
-can edit any field on any node: text, timing, styles, themes, audio, effects, props,
-components, nested folders, transitions — everything.
-
-**Workflow**:
-
-1. Start the player
-2. Edit the JSON file in your editor (change text, timing, colors, themes, styles, audio, effects, etc.)
-3. Player detects the file change, re-reads the full tree, and restarts playback — **no manual reload**
-
-This is the mode to use for **agent-assisted editing**:
-- Agent edits the JSON file directly (any field: timing, props, styles, themes, audio, captions)
-- Player auto-refreshes within ~500ms
-- User sees changes immediately
-
-**Player page has two controls**:
-
-| Control | What it does |
-|---------|-------------|
-| **✕ close button** (top right) | Kills the server process — agent's terminal command exits and agent regains control |
-| **Feedback input** (bottom) | Type feedback (approved? rejected? changes?) and press Send. Feedback is printed to the terminal so the agent sees it |
-
-**Typical agent session**:
-
-```bash
-# Agent starts player
-node src/render/cli.mjs preview draft.json --edit --port 3001
-# → Player opens in browser, agent's terminal blocks waiting
-
-# Agent edits the JSON file (in another terminal or via tool)
-# Player auto-reloads, user watches
-
-# User clicks ✕ when done → server exits → agent regains terminal
-# Or user types feedback → agent reads it from stdout and continues
-```
-
-The server watches the file with `fs.watchFile` and pushes reload events via SSE at `/api/events`.
-
-### Player API Endpoints
-
-| Endpoint | Method | What it returns/accepts |
-|----------|--------|------------------------|
-| `/api/video-data` | GET | Raw video.json |
-| `/api/scenes` | GET | Scene array: `[{name, start, end, duration, src, mediaType}]` |
-| `/api/video-info` | GET | Scene info + mode flags |
-| `/api/labels` | GET | Saved labels array |
-| `/api/labels` | POST | Save labels `{labels, scenes}` |
-| `/api/events` | GET | SSE stream for reload notifications (only in `--edit` mode) |
-
----
-
-## Rendering
-
-### From a stream tree JSON
-
-```bash
-# Default 16:9 portrait (1080×1920)
-npm run render -- my-video.json
-
-# Specific aspect
-npm run render -- my-video.json --aspect 9x16
-
-# All aspects at once
-npm run render -- my-video.json --aspect all
-
-# Custom output path (single aspect only)
-npm run render -- my-video.json --aspect 16x9 --output out/final.mp4
-```
-
-### From a template
-
-```bash
-# data.json provides values for template slots
-npm run render -- --template product-hero --data data.json
-
-# Combine with aspect flags
-npm run render -- --template product-hero --data data.json --aspect all
-```
-
-### List templates
-
-```bash
-npm run templates
-```
-
-### Pipeline (automated)
-
-1. **Parse** — Zod-validate stream tree / resolve template slots
-2. **Theme** — Apply theme preset (`cinematic`, `minimal`, `neon`, or `corporate`)
-3. **Duration** — Walk tree: series sums children (minus transition overlap), parallel takes max
-4. **Render** — Remotion `renderMedia()` per aspect ratio
-5. **Output** — MP4s to `out/` directory
-
-Progress is compact by default (one line per 50 frames). Use `--verbose` for per-frame output.
-
----
-
-## Templates (15 pre-built)
-
-Templates are stream trees with `${slot.name}` placeholders. Pass data to fill them.
-
-### Categories
-
-| Category | Templates |
-|----------|-----------|
-| Marketing | `product-hero`, `feature-showcase`, `before-after`, `social-clip`, `cinematic-intro` |
-| Demo | `demo-walkthrough` |
-| Social | `announcement`, `glow-up`, `quote-card`, `roast-list`, `stat-reveal`, `top5-countdown`, `year-recap`, `beat-drop` |
-| Presentation | `journey-map` |
-
-### Example: product-hero slots
-
-```bash
-cat data.json
-{
-  "headline": "Ship faster",
-  "subline": "One tool, zero friction",
-  "screenshot": "https://example.com/shot.png",
-  "cta": "Get started"
-}
-
-npm run render -- --template product-hero --data data.json --aspect all
-```
-
-Each template declares its slots with name, type (text/image/video/number/color/boolean), defaults, and required flags. Missing required slots produce validation errors.
-
-### Template source files
-
-```
-src/templates/marketing/product-hero.json
-src/templates/social/announcement.json
-...
+# Player auto-opens browser. Agent edits JSON → player auto-reloads.
+# User clicks ✕ → server exits → agent regains control.
+# Browser feedback input writes to feedback.txt.
 ```
 
 ---
 
-## Themes (4 presets)
-
-Set via the `theme` field at root level.
-
-| Preset | Vibe | Background |
-|--------|------|------------|
-| `cinematic` | Dark, warm, orange/pink accents | `#050505` |
-| `minimal` | Clean white, black/blue | `#ffffff` |
-| `neon` | Electric green/cyan on dark | `#0a0a0a` |
-| `corporate` | Professional navy/gold | `#0f172a` |
-
-```json
-{ "id": "root", "theme": "neon", "children": [...] }
-```
-
-Can also pass an inline JSON string or a partial theme object. Default is `cinematic`.
-
----
-
-## Built-in Components (13)
-
-Referenced by `componentName` in a `component` type node.
-
-| componentName | Description |
-|--------------|-------------|
-| `AnimatedHeadline` | Word-by-word kinetic typography with blur+scale stagger |
-| `TypewriterText` | Typing simulation |
-| `GlitchReveal` | Glitch-in text effect |
-| `DeviceMockup` | Browser/phone frame around a screenshot |
-| `CursorFlyover` | Animated cursor over screenshot with annotations |
-| `ComparisonSlider` | Before/after image comparison |
-| `StatCounter` | Animated number counter |
-| `ProgressBar` | Animated progress bar |
-| `GradientBackground` | Animated gradient background (linear, radial, conic) |
-| `ParticleField` | Particle system background |
-| `LightLeak` | Cinematic light leak overlay |
-| `SplitScreen` | Side-by-side layout |
-| `SpotlightReveal` | Circular light reveal |
-
-Usage:
-
-```json
-{
-  "id": "headline", "type": "component",
-  "componentName": "AnimatedHeadline",
-  "props": { "text": "Hello World", "gradient": true },
-  "actions": [{ "start": 0, "end": 6 }]
-}
-```
-
----
-
-## Editing Knowledge
-
-### Styling Captions (HTML + CSS)
-
-Subtitles support three text input methods and rich CSS styling.
-
-**1. Inline text** — set `src` to plain text (no VTT markers):
-
-```json
-{
-  "id": "my-caption",
-  "type": "subtitle",
-  "src": "Hello World",
-  "style": "color: #ff6b35; font-size: 64px; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0 20px rgba(255,107,53,0.5);",
-  "fontSize": 72,
-  "actions": [{ "start": 0, "end": 3 }]
-}
-```
-
-Supports `dangerouslySetInnerHTML` — you can use inline HTML in `src`:
-
-```json
-{
-  "id": "html-caption",
-  "type": "subtitle",
-  "src": "Built with <span style=\"color:#00ff88\">&lt;3</span>",
-  "actions": [{ "start": 0, "end": 3 }]
-}
-```
-
-**2. VTT file or inline VTT** — multi-cue subtitles with timestamps:
-
-```json
-{
-  "id": "vtt-caption",
-  "type": "subtitle",
-  "src": "captions.vtt",
-  "fontSize": 48,
-  "fontStyle": "italic",
-  "actions": [{ "start": 0, "end": 10 }]
-}
-```
-
-Or embed VTT cues directly:
-
-```json
-{
-  "id": "inline-vtt",
-  "type": "subtitle",
-  "src": "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nFirst caption\n\n00:00:05.000 --> 00:00:08.000\nSecond caption",
-  "actions": [{ "start": 0, "end": 10 }]
-}
-```
-
-**3. Explicit cues array** — structured JSON cues (most reliable):
-
-```json
-{
-  "id": "cued",
-  "type": "subtitle",
-  "cues": [
-    { "startFrom": 0, "endAt": 2, "text": "Opening", "className": "intro" },
-    { "startFrom": 2.5, "endAt": 5, "text": "Feature demo", "className": "feature" }
-  ],
-  "actions": [{ "start": 0, "end": 6 }]
-}
-```
-
-**Style cascade** (highest to lowest priority):
-
-1. `style` field on the stream node (inline CSS, converted to camelCase)
-2. `fontSize` / `fontStyle` fields
-3. `className` on cues (`.caption-overlay .caption.${className}`)
-4. Global `stylesheet` on root node (CSS selectors use `.type` and `.name`)
-
-Global stylesheet on root:
-
-```json
-{
-  "id": "root",
-  "stylesheet": ".subtitle { font-family: 'PingFang SC', sans-serif; }
-                 .subtitle.my-caption { color: #ff6b35; }
-                 .caption { background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 8px; }
-                 .word-active { color: #00ff88; }",
-  "children": [...]
-}
-```
-
-**Karaoke / word-highlight** — set `className` on the cue to `"karaoke"` or provide `words[]`:
-
-```json
-{
-  "cues": [{
-    "startFrom": 0, "endAt": 3,
-    "text": "Build smarter",
-    "className": "karaoke",
-    "words": [
-      { "text": "Build", "start": 0, "end": 1 },
-      { "text": "smarter", "start": 1, "end": 3 }
-    ]
-  }]
-}
-```
-
-Without explicit `words[]`, the engine auto-derives equal-duration word tokens. Active word gets class `.word-active` for CSS highlighting.
-
-**Default positioning**: bottom-center, 8% from bottom, 5% horizontal padding. Override via `style: "position: absolute; top: 10%; left: 10%;"`.
-
----
-
-### Custom Overlay Components (React / SVG + CSS)
-
-You can create custom React components and reference them from the stream tree. This works for HTML overlays, SVG graphics, animated logos, data visualizations — anything renderable as React.
-
-**1. Create a component file** in `src/components/`:
-
-```tsx
-// src/components/my/Badge.tsx
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { interpolate } from "remotion";
-
-interface BadgeProps {
-  text: string;
-  color?: string;
-  /** Provided automatically by the engine */
-  action: { start: number; end: number };
-  theme: any;
-}
-
-export const Badge: React.FC<BadgeProps> = ({ text, color, action, theme }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const local = frame - action.start * fps;
-  const duration = (action.end - action.start) * fps;
-
-  const opacity = interpolate(local, [0, 15, duration - 15, duration], [0, 1, 1, 0]);
-  const scale = interpolate(local, [0, 15], [0.5, 1], { extrapolateRight: "clamp" });
-
-  return (
-    <div style={{
-      position: "absolute", inset: 0,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      opacity, transform: `scale(${scale})`,
-    }}>
-      <svg width="300" height="120" viewBox="0 0 300 120">
-        <rect rx="60" ry="60" x="0" y="0" width="300" height="120"
-          fill={color || theme.colors.primary}
-          filter="url(#glow)" />
-        <text x="150" y="68" textAnchor="middle"
-          fill="white" fontSize="36" fontWeight="bold"
-          fontFamily={theme.fonts.heading}>
-          {text}
-        </text>
-        <defs>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-      </svg>
-    </div>
-  );
-};
-```
-
-**2. Register it** in `src/components/index.ts`:
-
-```tsx
-import { Badge } from "./my/Badge";
-
-export const builtinComponents: Record<string, React.ComponentType<any>> = {
-  // ...existing components...
-  Badge,
-};
-```
-
-**3. Reference it** in your stream tree:
-
-```json
-{
-  "id": "badge-1",
-  "type": "component",
-  "componentName": "Badge",
-  "props": {
-    "text": "NEW",
-    "color": "#ff6b35"
-  },
-  "actions": [{ "start": 1, "end": 4 }]
-}
-```
-
-**Component contract** (props the engine injects):
-
-```tsx
-interface InjectedProps {
-  action: { start: number; end: number };
-  theme: Theme;                    // resolved theme object
-  frame: number;                   // current global frame (useCurrentFrame)
-  fps: number;                     // from useVideoConfig
-}
-```
-
-Your component props merge with these. Use `action.start/end` to compute local frame timing, and `theme.colors/fonts` for consistent styling.
-
-**Where to put custom components**:
-- For project-specific components: `src/components/my/` (add to `index.ts`)
-- For one-off experiments: inline SVG/HTML in an `effect` wrapper (see next section)
-
----
-
-### Dynamic Loading (Animations, Emoji, Remote Components)
-
-Three mechanisms for dynamic visual content without bundling code.
-
-#### A. Built-in Keyframe Animations (effect stream)
-
-Wrap any node with an `effect` stream to apply an animation:
-
-```json
-{
-  "id": "animated-scene",
-  "type": "effect",
-  "animation": "bounceIn",
-  "animationTimingFunction": "ease-out",
-  "animationIterationCount": 1,
-  "children": [
-    { "id": "content", "type": "image", "src": "photo.jpg",
-      "actions": [{ "start": 0, "end": 3 }] }
-  ],
-  "actions": [{ "start": 0, "end": 3 }]
-}
-```
-
-All built-in animation names:
-
-| Fades | Slides | Zooms | Attention | Bounce Entrances | Rotations |
-|-------|--------|-------|-----------|-----------------|------------|
-| `fadeIn` | `slideInDown` | `zoomIn` | `pulse` | `bounceIn` | `rotateIn` |
-| `fadeOut` | `slideInUp` | `zoomOut` | `flash` |  | `rotateOut` |
-| `fadeInDown` | `slideInLeft` |  | `bounce` |  |  |
-| `fadeInUp` | `slideInRight` |  | `heartBeat` |  |  |
-| `fadeInLeft` |  |  | `rubberBand` |  |  |
-| `fadeInRight` |  |  | `shakeX` |  |  |
-| (8 fades total) |  |  |  |  |  |
-
-Each animation interpolates CSS properties (`opacity`, `transform`) frame-by-frame using Remotion's `interpolate()`.
-
-**Custom keyframes** — define inline instead of using a named animation:
-
-```json
-{
-  "id": "custom-anim",
-  "type": "effect",
-  "animation": "custom",
-  "customKeyframes": {
-    "0":  { "opacity": "0", "transform": "scale3d(0,0,0) rotate(0deg)" },
-    "50": { "opacity": "0.5", "transform": "scale3d(1.2,1.2,1.2) rotate(180deg)" },
-    "100": { "opacity": "1", "transform": "scale3d(1,1,1) rotate(360deg)" }
-  },
-  "children": [{ "id": "star", "type": "component", "componentName": "EmojiOverlay",
-    "props": { "emoji": "🌟", "size": 120 },
-    "actions": [{ "start": 0, "end": 2 }] }],
-  "actions": [{ "start": 0, "end": 2 }]
-}
-```
-
-Keyframe percentages (`"0"`–`"100"`) map to the action's duration. Any CSS property with numeric values works.
-
-#### B. Emoji / Text Overlays (via component stream)
-
-Use the component system with a simple inline-registered component for emoji or decorative text:
-
-```json
-{
-  "id": "emoji-1",
-  "type": "component",
-  "componentName": "AnimatedHeadline",
-  "props": {
-    "text": "🚀 Launch Day",
-    "glow": true,
-    "gradient": true
-  },
-  "actions": [{ "start": 0.5, "end": 4 }]
-}
-```
-
-For raw emoji without text animation, create a lightweight component (see Custom Overlay Components above) or use a subtitle with HTML:
-
-```json
-{
-  "id": "emoji-overlay",
-  "type": "subtitle",
-  "src": "<span style='font-size:120px'>🎉</span>",
-  "style": "position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); text-align: center;",
-  "actions": [{ "start": 0, "end": 2 }]
-}
-```
-
-#### C. Route Visualization (map stream type)
-
-There is a built-in `map` stream type for drawing animated routes between waypoints. It renders on an HTML Canvas — no API key needed.
-
-```json
-{
-  "id": "route-1",
-  "type": "map",
-  "waypoints": [
-    {"lat": 37.7749, "lng": -122.4194, "label": "SF"},
-    {"lat": 34.0522, "lng": -118.2437, "label": "LA"},
-    {"lat": 36.1699, "lng": -115.1398, "label": "LV"}
-  ],
-  "routeColor": "#4285F4",
-  "routeWeight": 4,
-  "markerSrc": null,
-  "zoom": 12,
-  "actions": [{ "start": 0, "end": 5 }]
-}
-```
-
-Features:
-- **Animated marker** travels along the path in sync with the current frame
-- **Waypoint markers** with color coding (green=start, yellow=mid, red=end) and labels
-- **Route line** with configurable color and weight
-- **Grid background** for map feel
-- **No external deps** — pure Canvas 2D rendering
-
-Fields:
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `waypoints[]` | array | required | `{lat, lng, label?, media?}` |
-| `waypoints[].lat` | number | — | Latitude |
-| `waypoints[].lng` | number | — | Longitude |
-| `waypoints[].label` | string | — | Display label above marker |
-| `waypoints[].media` | string | — | Image/video src for custom marker (not yet implemented) |
-| `routeColor` | string | `#4285F4` | Route line color |
-| `routeWeight` | number | 4 | Route line width |
-| `markerSrc` | string | null | Custom marker image |
-| `zoom` | number | 12 | Map zoom level (affects bounds padding) |
-
-This is a **native stream type** (`type: "map"`), not a component in the registry. It renders a full-canvas overlay. For full Google Maps integration (DirectionsService, satellite tiles), create a custom component instead.
-
-#### E. Subvideo — Nested Video Composition (subvideo stream type)
-
-The `subvideo` stream type embeds a **fully self-contained video composition** (complete stream tree) as a single node. This lets editors compose videos from independently-authored sub-parts.
-
-```json
-{
-  "id": "feature-reel",
-  "type": "subvideo",
-  "name": "Embedded Feature Reel",
-  "width": 1080,
-  "height": 1920,
-  "fps": 30,
-  "isSeries": true,
-  "transition": "fade",
-  "transitionTime": 0.3,
-  "actions": [{ "start": 0, "end": 8.4 }],
-  "children": [
-    {
-      "id": "scene-1",
-      "type": "folder",
-      "children": [
-        { "id": "bg-1", "type": "image", "src": "https://picsum.photos/seed/sub1/1080/1920", "fit": "cover",
-          "actions": [{ "start": 0, "end": 3 }] },
-        { "id": "title-1", "type": "subtitle", "src": "Feature 1", "fontSize": 48,
-          "actions": [{ "start": 0, "end": 3 }] }
-      ]
-    },
-    {
-      "id": "scene-2",
-      "type": "folder",
-      "children": [
-        { "id": "bg-2", "type": "image", "src": "https://picsum.photos/seed/sub2/1080/1920", "fit": "cover",
-          "actions": [{ "start": 0, "end": 3 }] },
-        { "id": "title-2", "type": "subtitle", "src": "Feature 2", "fontSize": 48,
-          "actions": [{ "start": 0, "end": 3 }] }
-      ]
-    }
-  ]
-}
-```
-
-**How it works**:
-- The subvideo has its own `width`, `height`, `fps`, `children` — a complete independent stream tree
-- **Duration** is computed from internal children (like a folder), not from actions
-- Actions control **internal trimming**: `actions[0].start` = offset within the subvideo (usually 0 for full play)
-- The parent Folder positions the subvideo via Series (sequential) or Sequence (parallel) wrapping — same as any leaf
-- **Foreground audio**: the subvideo sets `foreground: true` on AudioContext, muting the parent's video while playing
-
-**Fields**:
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `width` | int | 1080 | Subvideo's own render width |
-| `height` | int | 1920 | Subvideo's own render height |
-| `fps` | int | 30 | Own framerate (metadata; internal renders at parent FPS) |
-| `isSeries` | bool | — | If true, children play sequentially |
-| `transition` | string | — | `fade`, `slide`, `wipe`, `flip`, `clockWipe` for internal series |
-| `transitionTime` | number | 0.5 | Transition overlap in seconds |
-| `volume` | number | 1 | Audio volume |
-| `children` | array | `[]` | Full stream tree — any node types |
-| `actions` | array | required | `[{start, end}]` relative to subvideo's own timeline |
-
-**Use cases**:
-- Embed a chapter or segment authored by a different editor
-- Reuse a composed sequence (e.g. intro bumper) across multiple videos
-- Compose a video from independently-developed sub-videos
-- Each subvideo can have its own layout, timing, theme stylesheet, and transitions
-
-#### D. Remote Components (load from URL)
-
-The `component` stream type's `src` field lets you load a React component from a remote URL at render time:
-
-```json
-{
-  "id": "remote-badge",
-  "type": "component",
-  "componentName": "RemoteBadge",
-  "src": "https://cdn.example.com/components/badge.js",
-  "props": { "text": "LIVE", "color": "#ff0000" },
-  "actions": [{ "start": 0, "end": 3 }]
-}
-```
-
-**Remote component convention** — the module file must use `window.__React` and `window.__Remotion`:
-
-```js
-// badge.js — remote component loaded by the engine
-const React = window.__React;
-const { useCurrentFrame, interpolate } = window.__Remotion;
-
-function Badge(props) {
-  const frame = useCurrentFrame();
-  return React.createElement("div", {
-    style: {
-      background: props.color || "#ff6b35",
-      padding: "12px 24px",
-      borderRadius: "8px",
-      color: "white",
-      fontWeight: "bold",
-      fontSize: "48px",
-    }
-  }, props.text);
-}
-
-// Must use CommonJS default export
-module.exports = { default: Badge };
-```
-
-The engine supports both ES module (via blob URL + dynamic `import()`) and CJS fallback (via `new Function` eval). Components are cached after first load.
-
-**Preloading** — call before rendering to warm the cache:
-
-```tsx
-import { preloadComponents } from "./types/DynamicLoader";
-await preloadComponents(["https://cdn.example.com/components/badge.js"]);
-```
-
----
-
-## Recipes
-
-### Label video scenes from media files
-
-```bash
-# 1. Create scenes.json (root → scenes folder → one child per scene)
-# 2. Preview and label
-node src/render/cli.mjs preview scenes.json --label
-# 3. Labels auto-save to labels.json — use to pick best scenes
-```
-
-### Agent-assisted editing session (pi / Codex CLI / Claude Code / Copilot CLI)
-
-This is the main pattern for using `--edit` with an AI coding agent.
-
-The agent runs the player in the **background**, asks you for feedback via chat,
-edits the JSON, and the player auto-reloads.
-
-```bash
-# ── Agent does: ───────────────────────────────────────────────────────
-
-cd remotion-engine
-
-# Start player in background, log to file (terminal stays free)
-nohup node src/render/cli.mjs preview draft.json --edit --port 3001 \
-  > /tmp/player-draft.log 2>&1 &
-
-# Browser auto-opens to http://localhost:3001
-# You watch the video
-
-# Agent asks: "What do you think?"
-# You type feedback in the agent's chat (not the browser)
-
-# Agent edits the JSON based on your feedback
-# Player auto-reloads within ~500ms
-
-# Loop: ask → edit → watch → repeat
-
-# When done: agent kills the player
-kill %1
-
-# ── Or if user clicks ✕ in browser: ──────────────────────────────────
-# Server exits automatically → agent notices and continues
-```
-
-**Two feedback channels**:
-
-| Channel | How | Read by agent |
-|---------|-----|---------------|
-| Agent chat | Type in pi/Codex/Claude CLI | Agent reads your message directly |
-| Browser feedback input | Type in the browser bottom input | Written to `feedback.txt` next to the JSON, and printed to `/tmp/player-draft.log` |
-
-**Agent reads browser feedback**:
-
-```bash
-# Agent watches the log for user feedback
-# Player is already running in background, this is a separate command:
-tail -f /tmp/player-draft.log | grep --line-buffered "USER FEEDBACK"
-```
-
-**When using pi specifically**, the player can be started with:
-```
-node src/render/cli.mjs preview <file> --edit --port 3001 &
-```
-pi will print the URL and continue working. Edit the JSON, player auto-reloads.
-The user clicks ✕ when done → server exits → pi's background task completes cleanly.
-
-### Multi-aspect social renders
-
-```bash
-# YouTube (16:9) + TikTok (9:16) + Instagram (1:1)
-npm run render -- my-video.json --aspect all
-```
-
-### Use a template
-
-```bash
-npm run render -- --template product-hero --data my-data.json --aspect all
-```
-
----
-
-## Testing
-
-```bash
-npm run typecheck        # TypeScript type checking
-npm test                 # Vitest unit tests
-npm run render           # Smoke test: renders sample.json → out/preview.mp4
-```
-
-## Detailed Reference
+## Reference
 
 | Topic | File |
 |-------|------|
-| Full architecture design | `DESIGN.md` |
-| CLI source (all commands) | `src/render/cli.mjs` |
-| Player server (edit mode) | `src/player/server.mjs` |
-| Player server (label mode) | `src/player/label-server.mjs` |
-| Stream tree schema (all 11 types) | `src/schema/index.ts` |
-| Subtitle renderer (caption styling) | `src/types/Subtitle.tsx` |
-| Subvideo renderer (nested stream tree) | `src/types/Subvideo.tsx` |
-| Effect/Animation engine | `src/types/Effect.tsx`, `src/types/keyframes.ts` |
-| Dynamic component loader | `src/types/DynamicLoader.tsx` |
-| Theme system | `src/themes/` |
-| Template system | `src/templates/` |
-| Built-in components | `src/components/` |
-| Folder renderer (series/parallel) | `src/types/Folder.tsx` |
-| Rendering pipeline | `src/render/pipeline.ts` |
+| Dynamic components (remote, custom, effects) | [docs/dynamic-components.md](docs/dynamic-components.md) |
+| Template system (slots, categories, resolution) | [docs/templates.md](docs/templates.md) |
+| Theme system (presets, customization) | [docs/themes.md](docs/themes.md) |
+| Player servers (label + edit mode) | [docs/edit-mode.md](docs/edit-mode.md) |
+| Full architecture | `DESIGN.md` |

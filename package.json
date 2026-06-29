@@ -1,8 +1,11 @@
 {
-  "name": "@lalaic/remotion-engine",
+  "name": "@lalalic/remotion-engine",
   "version": "0.1.0",
   "private": true,
   "description": "Render-only Remotion engine. Stream-typed timeline kernel.",
+  "bin": {
+    "remotion-engine": "./src/render/cli.mjs"
+  },
   "type": "module",
   "main": "./src/lite.entry.tsx",
   "exports": {
