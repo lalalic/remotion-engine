@@ -1,0 +1,35 @@
+{
+  "id": "root",
+  "type": "root",
+  "width": 640,
+  "height": 480,
+  "fps": 30,
+  "isSeries": true,
+  "transition": "fade",
+  "transitionTime": 0.3,
+  "children": [
+    {
+      "id": "scene-1",
+      "type": "folder",
+      "title": "Scene 1",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg",
+          "type": "image",
+          "src": "https://picsum.photos/seed/test-basic/640/480",
+          "fit": "cover",
+          "actions": [{ "start": 0, "end": 2 }]
+        },
+        {
+          "id": "title",
+          "type": "subtitle",
+          "src": "Basic Render Test",
+          "fontSize": 48,
+          "style": "color: #ffffff; font-weight: bold; text-shadow: 0 2px 12px rgba(0,0,0,0.8);",
+          "actions": [{ "start": 0.2, "end": 1.8 }]
+        }
+      ]
+    }
+  ]
+}

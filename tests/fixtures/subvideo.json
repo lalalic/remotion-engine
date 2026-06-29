@@ -1,0 +1,114 @@
+{
+  "id": "root",
+  "type": "root",
+  "width": 640,
+  "height": 480,
+  "fps": 30,
+  "isSeries": true,
+  "transition": "fade",
+  "transitionTime": 0.3,
+  "children": [
+    {
+      "id": "intro",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg-intro",
+          "type": "image",
+          "src": "https://picsum.photos/seed/subv-intro/640/480",
+          "fit": "cover",
+          "actions": [{ "start": 0, "end": 2 }]
+        },
+        {
+          "id": "title-intro",
+          "type": "subtitle",
+          "src": "Main Video",
+          "fontSize": 48,
+          "style": "color: #ffffff; font-weight: bold;",
+          "actions": [{ "start": 0, "end": 2 }]
+        }
+      ]
+    },
+    {
+      "id": "subvideo-chapter",
+      "type": "subvideo",
+      "name": "Embedded Reel",
+      "width": 640,
+      "height": 480,
+      "fps": 30,
+      "isSeries": true,
+      "transition": "fade",
+      "transitionTime": 0.3,
+      "actions": [{ "start": 0, "end": 4 }],
+      "children": [
+        {
+          "id": "sub-scene-1",
+          "type": "folder",
+          "isSeries": false,
+          "children": [
+            {
+              "id": "sub-bg-1",
+              "type": "image",
+              "src": "https://picsum.photos/seed/subv-inner1/640/480",
+              "fit": "cover",
+              "actions": [{ "start": 0, "end": 2 }]
+            },
+            {
+              "id": "sub-title-1",
+              "type": "subtitle",
+              "src": "Subvideo Scene 1",
+              "fontSize": 36,
+              "style": "color: #ffffff; font-weight: bold;",
+              "actions": [{ "start": 0, "end": 2 }]
+            }
+          ]
+        },
+        {
+          "id": "sub-scene-2",
+          "type": "folder",
+          "isSeries": false,
+          "children": [
+            {
+              "id": "sub-bg-2",
+              "type": "image",
+              "src": "https://picsum.photos/seed/subv-inner2/640/480",
+              "fit": "cover",
+              "actions": [{ "start": 0, "end": 2 }]
+            },
+            {
+              "id": "sub-title-2",
+              "type": "subtitle",
+              "src": "Subvideo Scene 2",
+              "fontSize": 36,
+              "style": "color: #ffffff; font-weight: bold;",
+              "actions": [{ "start": 0, "end": 2 }]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outro",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg-outro",
+          "type": "image",
+          "src": "https://picsum.photos/seed/subv-outro/640/480",
+          "fit": "cover",
+          "actions": [{ "start": 0, "end": 2 }]
+        },
+        {
+          "id": "title-outro",
+          "type": "subtitle",
+          "src": "Back to Main",
+          "fontSize": 48,
+          "style": "color: #ffffff; font-weight: bold;",
+          "actions": [{ "start": 0, "end": 2 }]
+        }
+      ]
+    }
+  ]
+}

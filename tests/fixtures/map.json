@@ -1,0 +1,31 @@
+{
+  "id": "root",
+  "type": "root",
+  "width": 640,
+  "height": 480,
+  "fps": 30,
+  "isSeries": false,
+  "children": [
+    {
+      "id": "route",
+      "type": "map",
+      "name": "sf-to-la",
+      "waypoints": [
+        { "lat": 37.7749, "lng": -122.4194, "label": "SF" },
+        { "lat": 36.7783, "lng": -119.4179, "label": "Fresno" },
+        { "lat": 34.0522, "lng": -118.2437, "label": "LA" }
+      ],
+      "routeColor": "#4285F4",
+      "routeWeight": 5,
+      "actions": [{ "start": 0, "end": 3 }]
+    },
+    {
+      "id": "map-title",
+      "type": "subtitle",
+      "src": "Map: SF to LA",
+      "fontSize": 36,
+      "style": "color: #ffffff; font-weight: bold; text-shadow: 0 2px 8px rgba(0,0,0,0.6);",
+      "actions": [{ "start": 0.3, "end": 2.7 }]
+    }
+  ]
+}

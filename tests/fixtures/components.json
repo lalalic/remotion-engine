@@ -1,0 +1,57 @@
+{
+  "id": "root",
+  "type": "root",
+  "width": 640,
+  "height": 480,
+  "fps": 30,
+  "isSeries": true,
+  "transition": "fade",
+  "transitionTime": 0.3,
+  "theme": "cinematic",
+  "children": [
+    {
+      "id": "scene-1",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg",
+          "type": "component",
+          "componentName": "GradientBackground",
+          "props": { "type": "radial", "animated": true },
+          "isBackground": true,
+          "actions": [{ "start": 0, "end": 3 }]
+        },
+        {
+          "id": "headline",
+          "type": "component",
+          "componentName": "AnimatedHeadline",
+          "props": { "text": "Component Test", "subtext": "Built-in components render correctly", "gradient": true },
+          "actions": [{ "start": 0.5, "end": 2.5 }]
+        }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg2",
+          "type": "component",
+          "componentName": "GradientBackground",
+          "props": { "type": "linear", "animated": true },
+          "isBackground": true,
+          "actions": [{ "start": 0, "end": 3 }]
+        },
+        {
+          "id": "stats",
+          "type": "component",
+          "componentName": "StatCounter",
+          "props": { "value": 100, "suffix": "%", "label": "Working" },
+          "actions": [{ "start": 0.5, "end": 2.5 }]
+        }
+      ]
+    }
+  ]
+}

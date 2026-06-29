@@ -1,0 +1,69 @@
+{
+  "id": "root",
+  "type": "root",
+  "width": 640,
+  "height": 480,
+  "fps": 30,
+  "isSeries": false,
+  "theme": "cinematic",
+  "children": [
+    {
+      "id": "bgm",
+      "type": "audio",
+      "src": "assets/bgm/ambient-loop.mp3",
+      "volume": 0.15,
+      "actions": [{ "start": 0, "end": 5 }]
+    },
+    {
+      "id": "scene-1",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "bg1",
+          "type": "component",
+          "componentName": "GradientBackground",
+          "props": { "type": "radial", "animated": true },
+          "isBackground": true,
+          "actions": [{ "start": 0, "end": 5 }]
+        },
+        {
+          "id": "headline",
+          "type": "component",
+          "componentName": "AnimatedHeadline",
+          "props": { "text": "Full Feature Test", "subtext": "All systems operational", "gradient": true },
+          "actions": [{ "start": 0.3, "end": 4.5 }]
+        }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "stats",
+          "type": "component",
+          "componentName": "StatCounter",
+          "props": { "value": 100, "suffix": "%", "label": "Coverage" },
+          "actions": [{ "start": 0.5, "end": 4.5 }]
+        }
+      ]
+    },
+    {
+      "id": "scene-3",
+      "type": "folder",
+      "isSeries": false,
+      "children": [
+        {
+          "id": "caption",
+          "type": "subtitle",
+          "src": "Subtitle overlay works",
+          "fontSize": 40,
+          "style": "color: #ffffff; font-weight: bold;",
+          "actions": [{ "start": 0.3, "end": 4.5 }]
+        }
+      ]
+    }
+  ]
+}

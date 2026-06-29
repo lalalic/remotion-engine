@@ -1,0 +1,33 @@
+{
+  "id": "root",
+  "type": "root",
+  "width": 640,
+  "height": 480,
+  "fps": 30,
+  "isSeries": false,
+  "children": [
+    {
+      "id": "bgm",
+      "type": "audio",
+      "src": "assets/bgm/ambient-loop.mp3",
+      "volume": 0.3,
+      "isBackground": true,
+      "actions": [{ "start": 0, "end": 3 }]
+    },
+    {
+      "id": "bg",
+      "type": "image",
+      "src": "https://picsum.photos/seed/audio-test/640/480",
+      "fit": "cover",
+      "actions": [{ "start": 0, "end": 3 }]
+    },
+    {
+      "id": "label",
+      "type": "subtitle",
+      "src": "Audio Test",
+      "fontSize": 48,
+      "style": "color: #ffffff; font-weight: bold;",
+      "actions": [{ "start": 0.5, "end": 2.5 }]
+    }
+  ]
+}

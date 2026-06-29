@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "title": "Scene Render Test",
+    "fps": 30,
+    "aspects": ["16x9"],
+    "duration": 5
+  },
+  "voiceover": {
+    "tts": "edge-tts",
+    "voice": "en-US-AriaNeural"
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "start": 0,
+      "duration": 3,
+      "component": "BigStatement",
+      "props": {
+        "headline": "Scene Rendering Works",
+        "subhead": "Testing the scene-based pipeline"
+      },
+      "voiceover": {
+        "audio": ""
+      },
+      "captions": [
+        { "t": 0, "text": "Scene rendering works" }
+      ],
+      "captionStyle": "bold-bottom",
+      "bgmIntensity": "low"
+    },
+    {
+      "id": "scene-2",
+      "start": 3,
+      "duration": 2,
+      "component": "CTA",
+      "props": {
+        "headline": "Test Complete"
+      },
+      "voiceover": {
+        "audio": ""
+      },
+      "captions": [
+        { "t": 0, "text": "Test complete" }
+      ],
+      "captionStyle": "bold-bottom",
+      "bgmIntensity": "low"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "id": "root",
+  "type": "root",
+  "width": 640,
+  "height": 480,
+  "fps": 30,
+  "isSeries": true,
+  "transition": "fade",
+  "transitionTime": 0.3,
+  "stylesheet": ".effect { overflow: hidden; }",
+  "children": [
+    {
+      "id": "fade-in",
+      "type": "effect",
+      "animation": "fadeIn",
+      "animationTimingFunction": "ease-in-out",
+      "children": [
+        {
+          "id": "bg-fade",
+          "type": "image",
+          "src": "https://picsum.photos/seed/effect-fade/640/480",
+          "fit": "cover",
+          "actions": [{ "start": 0, "end": 2 }]
+        },
+        {
+          "id": "title-fade",
+          "type": "subtitle",
+          "src": "Fade In Effect",
+          "fontSize": 48,
+          "style": "color: #ffffff; font-weight: bold;",
+          "actions": [{ "start": 0, "end": 2 }]
+        }
+      ],
+      "actions": [{ "start": 0, "end": 2 }]
+    },
+    {
+      "id": "bounce",
+      "type": "effect",
+      "animation": "bounceIn",
+      "children": [
+        {
+          "id": "bg-bounce",
+          "type": "image",
+          "src": "https://picsum.photos/seed/effect-bounce/640/480",
+          "fit": "cover",
+          "actions": [{ "start": 0, "end": 2 }]
+        },
+        {
+          "id": "title-bounce",
+          "type": "subtitle",
+          "src": "Bounce In",
+          "fontSize": 48,
+          "style": "color: #ffffff; font-weight: bold;",
+          "actions": [{ "start": 0, "end": 2 }]
+        }
+      ],
+      "actions": [{ "start": 0, "end": 2 }]
+    },
+    {
+      "id": "custom-kf",
+      "type": "effect",
+      "animation": "custom",
+      "customKeyframes": {
+        "0": { "opacity": "0", "transform": "scale(0.5) rotate(-10deg)" },
+        "50": { "opacity": "1", "transform": "scale(1.1) rotate(5deg)" },
+        "100": { "opacity": "1", "transform": "scale(1) rotate(0deg)" }
+      },
+      "children": [
+        {
+          "id": "bg-custom",
+          "type": "image",
+          "src": "https://picsum.photos/seed/effect-custom/640/480",
+          "fit": "cover",
+          "actions": [{ "start": 0, "end": 2 }]
+        },
+        {
+          "id": "title-custom",
+          "type": "subtitle",
+          "src": "Custom Keyframes",
+          "fontSize": 48,
+          "style": "color: #ffffff; font-weight: bold;",
+          "actions": [{ "start": 0, "end": 2 }]
+        }
+      ],
+      "actions": [{ "start": 0, "end": 2 }]
+    }
+  ]
+}
