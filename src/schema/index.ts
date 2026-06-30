@@ -27,6 +27,7 @@ const BaseShape = {
   id: z.string().default(() => uid()),
   name: z.string().optional(),
   title: z.string().optional(),
+  description: z.string().optional().describe("human label or storyboard description"),
   src: z.string().optional(),
   style: z.string().optional().describe("inline css"),
   visible: z.boolean().default(true),

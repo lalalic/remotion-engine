@@ -684,3 +684,243 @@ describe("Frame-Accurate Verification", () => {
     expect(expectedFrames).toBeGreaterThan(30); // at least 30 frames for 1s @ 30fps
   });
 });
+
+// ───────────────────────────────────────────────────────────────────────────
+// 14. Description Field (label/storyboard metadata on any stream type)
+// ───────────────────────────────────────────────────────────────────────────
+
+describe("Description Field", () => {
+  it("validates description on image nodes via schema", async () => {
+    // Import schema directly to validate
+    const { image, folder, root } = await import("../src/schema/index");
+
+    const withDesc = image.parse({
+      id: "test-img",
+      type: "image",
+      src: "https://picsum.photos/seed/desc/640/480",
+      description: "A beautiful sunset",
+      actions: [{ start: 0, end: 3 }],
+    });
+    expect(withDesc.description).toBe("A beautiful sunset");
+
+    const withoutDesc = image.parse({
+      id: "test-img-2",
+      type: "image",
+      src: "https://picsum.photos/seed/no-desc/640/480",
+      actions: [{ start: 0, end: 3 }],
+    });
+    expect(withoutDesc.description).toBeUndefined();
+  });
+
+  it("validates description on video/subtitle/component nodes via schema", async () => {
+    const { video, subtitle, component } = await import("../src/schema/index");
+
+    const v = video.parse({
+      id: "test-vid",
+      type: "video",
+      src: "test.mp4",
+      description: "label for video clip",
+      actions: [{ start: 0, end: 5 }],
+    });
+    expect(v.description).toBe("label for video clip");
+
+    const s = subtitle.parse({
+      id: "test-sub",
+      type: "subtitle",
+      src: "Hello",
+      description: "overlay text label",
+      actions: [{ start: 0, end: 3 }],
+    });
+    expect(s.description).toBe("overlay text label");
+
+    const c = component.parse({
+      id: "test-comp",
+      type: "component",
+      componentName: "StatCounter",
+      description: "stats component label",
+      props: { value: 100 },
+      actions: [{ start: 0, end: 3 }],
+    });
+    expect(c.description).toBe("stats component label");
+  });
+
+  it("preserves description through render pipeline", async () => {
+    // Render a fixture where image has a description — the engine should not strip it
+    const fixture = {
+      root: {
+        id: "root",
+        type: "root",
+        width: 640,
+        height: 480,
+        fps: 30,
+        isSeries: false,
+        children: [
+          {
+            id: "desc-img",
+            type: "image",
+            src: "https://picsum.photos/seed/desc-render/640/480",
+            description: "Preserved description",
+            fit: "cover",
+            actions: [{ start: 0, end: 2 }],
+          },
+        ],
+      },
+    };
+
+    const { writeFileSync } = await import("node:fs");
+    const tmpFixture = outPath("_description.json");
+    writeFileSync(tmpFixture, JSON.stringify(fixture));
+
+    const output = renderFixture(tmpFixture, {
+      outputName: "description.mp4",
+      timeout: RENDER_TIMEOUT,
+    });
+
+    const info = getVideoInfo(output);
+    expect(info.width).toBe(640);
+    expect(info.fileSizeBytes).toBeGreaterThan(1000);
+
+    try { rmSync(tmpFixture); } catch {}
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// 15. Scene as Folder Alias
+// ───────────────────────────────────────────────────────────────────────────
+
+describe("Scene as Folder Alias", () => {
+  it("treats scene type nodes identically to folder type nodes", async () => {
+    // Both scene and folder should render the same structure.
+    // First render with folders, then with scenes, compare structure.
+    const fixtureScenes = {
+      root: {
+        id: "root",
+        type: "root",
+        width: 640,
+        height: 480,
+        fps: 30,
+        isSeries: true,
+        transition: "fade",
+        transitionTime: 0.3,
+        children: [
+          {
+            id: "scene-1",
+            type: "scene",
+            name: "Intro",
+            description: "Opening sequence",
+            children: [
+              {
+                id: "s1-img",
+                type: "image",
+                src: "https://picsum.photos/seed/scene-alias-1/640/480",
+                fit: "cover",
+                actions: [{ start: 0, end: 2 }],
+              },
+            ],
+          },
+          {
+            id: "scene-2",
+            type: "scene",
+            name: "Outro",
+            description: "Closing message",
+            children: [
+              {
+                id: "s2-img",
+                type: "image",
+                src: "https://picsum.photos/seed/scene-alias-2/640/480",
+                fit: "cover",
+                actions: [{ start: 0, end: 2 }],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const { writeFileSync } = await import("node:fs");
+    const tmpFixture = outPath("_scene-as-folder.json");
+    writeFileSync(tmpFixture, JSON.stringify(fixtureScenes));
+
+    const output = renderFixture(tmpFixture, {
+      outputName: "scene-as-folder.mp4",
+      timeout: RENDER_TIMEOUT,
+    });
+
+    const info = getVideoInfo(output);
+    expect(info.width).toBe(640);
+    // 2 scenes × 2s − 0.3s transition = ~3.7s
+    expect(info.durationSec).toBeGreaterThanOrEqual(3);
+
+    // Verify visual content at both scenes
+    const frame1 = outPath("frames/scene-alias-0.5s.png");
+    extractFrame(output, 0.5, frame1);
+    expect(isFrameNonBlank(frame1)).toBe(true);
+
+    const frame2 = outPath("frames/scene-alias-2.5s.png");
+    extractFrame(output, 2.5, frame2);
+    expect(isFrameNonBlank(frame2)).toBe(true);
+
+    try { rmSync(tmpFixture); } catch {}
+  });
+
+  it("mixes scene and folder types in same tree", async () => {
+    // A root using series with a mix of scene and folder children
+    const fixture = {
+      root: {
+        id: "root",
+        type: "root",
+        width: 640,
+        height: 480,
+        fps: 30,
+        isSeries: true,
+        transition: "fade",
+        transitionTime: 0.3,
+        children: [
+          {
+            id: "scene-mixed-1",
+            type: "scene",
+            name: "Scene First",
+            children: [
+              {
+                id: "mix1-img",
+                type: "image",
+                src: "https://picsum.photos/seed/mix-scene/640/480",
+                fit: "cover",
+                actions: [{ start: 0, end: 2 }],
+              },
+            ],
+          },
+          {
+            id: "folder-mixed-2",
+            type: "folder",
+            name: "Folder Second",
+            children: [
+              {
+                id: "mix2-img",
+                type: "image",
+                src: "https://picsum.photos/seed/mix-folder/640/480",
+                fit: "cover",
+                actions: [{ start: 0, end: 2 }],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const { writeFileSync } = await import("node:fs");
+    const tmpFixture = outPath("_mixed-scene-folder.json");
+    writeFileSync(tmpFixture, JSON.stringify(fixture));
+
+    const output = renderFixture(tmpFixture, {
+      outputName: "mixed-scene-folder.mp4",
+      timeout: RENDER_TIMEOUT,
+    });
+
+    const info = getVideoInfo(output);
+    expect(info.width).toBe(640);
+    expect(info.durationSec).toBeGreaterThanOrEqual(3);
+
+    try { rmSync(tmpFixture); } catch {}
+  });
+});

@@ -88,11 +88,11 @@ if (isFolder) {
     // Try to extract scenes
     const root = parsed.root || parsed;
 
-    // Format 1: stream tree — folders as scenes
+    // Format 1: stream tree — folders/scenes as scenes
     if (root.children?.length && !root.children.find(c => c.name === "scenes" || c.id === "scenes")) {
       let offset = 0;
       scenes = root.children
-        .filter(c => c.type === "folder" || c.children?.length)
+        .filter(c => c.type === "folder" || c.type === "scene" || c.children?.length)
         .filter(c => !c.isBackground)
         .map(s => {
           const leaf = (s.children || []).find(c => c.src && (c.type === "image" || c.type === "video"));
@@ -240,7 +240,8 @@ document.getElementById("close-btn")?.addEventListener("click", () => {
 });
 
 // ─── State ────────────────────────────────────────────────────────────
-var labelsData = { labels: [], scenes: [] };
+// labelDescriptions maps sceneIndex → description text (from stream tree)
+var labelDescriptions = {};
 var currentTime = 0;
 var currentSceneIndex = 0;
 var selectedSceneOverride = -1;
@@ -250,12 +251,21 @@ var savedToast = document.getElementById("saved-toast");
 var sceneInfo = document.getElementById("scene-info");
 var cachedInfo = null;
 
-// ─── Load existing labels ────────────────────────────────────────────
+// ─── Load existing labels from stream tree ───────────────────────────
 fetch("/api/labels").then(function(r) {
   if (r.ok) return r.json();
-  return { labels: [], scenes: [] };
-}).then(function(data) {
-  labelsData = data;
+  return null;
+}).then(function(tree) {
+  if (tree) {
+    var root = tree.root || tree;
+    var children = root.children || [];
+    for (var i = 0; i < children.length; i++) {
+      var media = (children[i].children || [])[0];
+      if (media && media.description) {
+        labelDescriptions[i] = media.description;
+      }
+    }
+  }
   loadSceneInfo();
 }).catch(function() {});
 
@@ -278,11 +288,13 @@ function loadSceneInfo(refresh) {
 function updateSceneInfo(info) {
   if (!sceneInfo) return;
   var scenes = info.scenes || [];
+  var prevIndex = currentSceneIndex;
   if (selectedSceneOverride >= 0) {
     var selScene = scenes[selectedSceneOverride];
     if (selScene) {
       currentSceneIndex = selectedSceneOverride;
       sceneInfo.textContent = selScene.name + " (selected)";
+      if (prevIndex !== currentSceneIndex) updateLabelInput();
       renderThumbnails(info);
       return;
     }
@@ -300,6 +312,7 @@ function updateSceneInfo(info) {
   } else {
     sceneInfo.textContent = currentTime.toFixed(1) + "s";
   }
+  if (prevIndex !== currentSceneIndex) updateLabelInput();
   renderThumbnails(info);
 }
 
@@ -307,12 +320,11 @@ function renderThumbnails(info) {
   var container = document.getElementById("thumbnails");
   if (!container) return;
   var scenes = info.scenes || [];
-  var hasLabels = labelsData.labels || [];
   var html = "";
   for (var i = 0; i < scenes.length; i++) {
     var s = scenes[i];
     var isActive = i === currentSceneIndex ? " active" : "";
-    var hasLabel = hasLabels.some(function(l) { return l.sceneIndex === i; }) ? " has-label" : "";
+    var hasLabel = labelDescriptions[i] ? " has-label" : "";
     var thumbSrc = s.src || "";
     var img;
     if (thumbSrc) {
@@ -328,6 +340,14 @@ function renderThumbnails(info) {
   container.innerHTML = html;
 }
 
+// ─── Helper: populate input with current scene's label ───────────────
+function updateLabelInput() {
+  var label = labelDescriptions[currentSceneIndex];
+  if (labelInput) {
+    labelInput.value = label || "";
+  }
+}
+
 // ─── Thumbnail click delegation ──────────────────────────────────────
 document.getElementById("thumbnails")?.addEventListener("click", function(e) {
   var item = e.target.closest(".thumb-item");
@@ -341,6 +361,7 @@ document.getElementById("thumbnails")?.addEventListener("click", function(e) {
 function seekToScene(index) {
   selectedSceneOverride = index;
   currentSceneIndex = index;
+  updateLabelInput();
   loadSceneInfo();
   // Seek player using exposed API
   fetch("/api/video-info").then(function(r) { return r.json(); }).then(function(info) {
@@ -377,40 +398,18 @@ function saveLabel() {
   labelBtn.disabled = true;
 
   var sceneIndex = currentSceneIndex;
-  var sceneName = "";
-  fetch("/api/video-info").then(function(r) { return r.json(); }).then(function(info) {
-    var scene = (info.scenes || [])[sceneIndex];
-    if (scene) sceneName = scene.name;
 
-    var label = {
-      time: parseFloat(currentTime.toFixed(3)),
+  // Update local state
+  labelDescriptions[sceneIndex] = text;
+
+  fetch("/api/labels", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
       sceneIndex: sceneIndex,
-      sceneName: sceneName,
-      src: scene?.src || "",
-      mediaType: scene?.mediaType || "unknown",
-      label: text,
-    };
-
-    // Update existing or append
-    var existingIdx = -1;
-    for (var i = 0; i < labelsData.labels.length; i++) {
-      if (labelsData.labels[i].sceneIndex === sceneIndex) {
-        existingIdx = i;
-        break;
-      }
-    }
-    if (existingIdx >= 0) {
-      labelsData.labels[existingIdx].label = text;
-      labelsData.labels[existingIdx].time = currentTime;
-    } else {
-      labelsData.labels.push(label);
-    }
-
-    return fetch("/api/labels", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(labelsData),
-    });
+      description: text,
+      time: parseFloat(currentTime.toFixed(3)),
+    }),
   }).then(function(res) {
     if (res.ok) {
       labelInput.value = "";
@@ -442,11 +441,16 @@ const server = createServer((req, res) => {
     // API: Load/save labels
     if (path === "/api/labels") {
       if (req.method === "GET") {
+        // Return the stream tree — descriptions on children are the labels
         let body;
         try {
           body = readFileSync(LABELS_PATH, "utf-8");
+          // Validate it's a stream tree; if not, fall back
+          const parsed = JSON.parse(body);
+          if (!parsed.type && !parsed.root) throw new Error("not a stream tree");
         } catch {
-          body = JSON.stringify({ labels: [], scenes: scenes });
+          // Return current videoData (without descriptions) as the label tree
+          body = JSON.stringify(videoData);
         }
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(body);
@@ -457,7 +461,22 @@ const server = createServer((req, res) => {
         req.on("data", c => body += c);
         req.on("end", () => {
           try {
-            writeFileSync(LABELS_PATH, body, "utf-8");
+            const data = JSON.parse(body);
+            // data is { sceneIndex, description, time? } — merge into videoData
+            const { sceneIndex, description, time } = data;
+            if (typeof sceneIndex === "number" && typeof description === "string") {
+              const child = videoData?.children?.[sceneIndex];
+              const media = child?.children?.[0];
+              if (media) {
+                media.description = description || undefined;
+                // Store the timestamp when this label was captured
+                if (typeof time === "number") {
+                  media.labeledAt = time;
+                }
+              }
+            }
+            // Save the full stream tree to labels.json
+            writeFileSync(LABELS_PATH, JSON.stringify(videoData, null, 2), "utf-8");
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ saved: true }));
           } catch (e) {

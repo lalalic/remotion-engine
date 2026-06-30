@@ -51,7 +51,7 @@ try {
   if (root.children?.length && !root.children.find(c => c.name === "scenes" || c.id === "scenes")) {
     let offset = 0;
     scenes = root.children
-      .filter(c => c.type === "folder" || c.children?.length)
+      .filter(c => c.type === "folder" || c.type === "scene" || c.children?.length)
       .filter(c => !c.isBackground)
       .map(s => {
         // Find first leaf child with a src (image/video) for playback
@@ -116,7 +116,7 @@ if (MODE_EDIT) {
       if (root.children?.length && !root.children.find(c => c.name === "scenes" || c.id === "scenes")) {
         let offset = 0;
         scenes = root.children
-          .filter(c => c.type === "folder" || c.children?.length)
+          .filter(c => c.type === "folder" || c.type === "scene" || c.children?.length)
           .filter(c => !c.isBackground)
           .map(s => {
             const leaf = (s.children || []).find(c => c.src && (c.type === "image" || c.type === "video"));

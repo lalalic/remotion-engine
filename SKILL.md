@@ -76,32 +76,64 @@ Style cascade: `style` field → `fontSize/fontStyle` → cue className → root
 
 ## 2. Video Design Best Practice
 
-Three-phase workflow:
+### Label → labels.json to get user initial input
 
-### Label → labels.json
-
-```bash
-npx lalalic/remotion-engine preview /path/to/media/folder --label
-```
-Browse clips, type labels, press Enter. Output: `labels.json` with `{time, sceneIndex, src, label}`.
-
-### Storyboard → scene-video.json
-
-`scene` nodes are organizational. The UI shows them as collapsible cards.
-Agent generates a storyboard as `scene[]` array, then fills each scene with children.
+The label player works with a simple stream tree JSON.
+It creates one node per media file (image/video) as children and lets you label them.
 
 ```json
-{ "type":"scene", "name":"Intro", "description":"Hook",
-  "children":[{"type":"component","componentName":"AnimatedHeadline",...}] }
+# labels.json
+{
+    "id": "root", "type": "root", "width": 1080, "height": 1920, "fps": 30, "isSeries": true,
+    "children": [ #list media ordered by created time
+      {id, type:"image", src, actions:[{start:0,end:5}], description:"label text"},
+      {id, type:"video", src, actions:[{start:0,end: <video duration> }], description:"label text"},
+      ...
+    ]
+  }
 ```
 
-### Assemble → video.json (production)
+### Storyboard → storyboard.json to get agent high-level video plan
 
-Replace `scene` containers with full stream tree. Add audio, effects, transitions, captions.
+`scene` nodes are organizational containers. It's a perfect tool for organizing your video structure. The agent generates a storyboard, then fills each scene with concrete media/component children and subtitle as script anywhere. 
+This is a sample agent storyboard format.
+
+```json
+# storyboard.json
+{
+  "id": "root", "type": "root","width": 1080, "height": 1920, "fps": 30, "isSeries": true,
+  "children": [ # scenes
+    { "type": "scene", "name": "Intro",
+      "description": "Opener with animated headline and ambient BGM", # summary, style guide, agent prompt
+      "children": [
+        {type:"subtitle", src:"Welcome to our product"},# use subtitle for story script during storyboard phase
+        {type:"folder"} # use folder to group multiple media/components for this scene or single media/component
+      ]
+    },
+    { "type": "scene","name": "Feature",
+      "description": "Product screenshot with stat counter",
+      "children": [
+        { "type": "scene","name": "Feature1", children:[...]}
+        ...
+      ]
+    },
+    {"type": "scene", "name": "Outro",
+      "description": "Call to action",
+      "children": [...]
+    }
+  ]
+}
+```
+
+### Assemble → video.json (production) to get final renderable video JSON
+
+Replace `scene` containers with flat stream tree (or keep scenes as organization).
+Add effects, transitions, rhythm, maps, tts, subtitle, components. This is the final renderable JSON.
 
 ```bash
-npx lalalic/remotion-engine preview final.json --edit   # live agent loop
-npx lalalic/remotion-engine render final.json --aspect all  # MP4 output
+npx lalalic/remotion-engine preview video.json --edit   # live agent loop
+npx lalalic/remotion-engine render video.json --aspect all  # MP4 output
+```
 ```
 
 ---
@@ -119,7 +151,7 @@ npx lalalic/remotion-engine <command> [options]
 | `render <file.json>` | Render stream tree to MP4 |
 | `render --template <id> --data <data.json>` | Resolve template with data, render |
 | `preview <file.json>` | Open Remotion Studio |
-| `preview <file.json/folder> --label` | Interactive labeling player |
+| `preview <file.json> --label` | Interactive labeling player |
 | `preview <file.json> --edit` | Live editing loop (auto-reload on file change) |
 | `templates` | List all templates |
 
